@@ -1,0 +1,107 @@
+#!/usr/bin/env ruby
+$:.unshift File.join(File.dirname(__FILE__), *%w[.. lib])
+
+require 'statisk'
+
+
+banner = %Q{
+ statisk -- a stupidly simple, no-nonsense static site generator
+
+}
+
+class CLI
+  def self.parse(args)
+    options = OpenStruct.new
+    options.production = false
+
+    opts = OptionParser.new do |opts|
+
+      opts.banner = '  statisk -- a stupidly simple, no-nonsense static site generator'
+
+      opts.separator ''
+      opts.separator '  Usage:'
+
+      opts.on('--serve', 'serve your site') do
+        puts 'serve'
+      end
+
+      opts.on('--init', 'create a new site') do
+        Statisk::CLI::Init.new
+      end
+
+      opts.on('--build', 'build your site') do
+        puts 'build'
+      end
+
+      opts.on('--clean', 'clean your site') do
+        puts 'clean'
+      end
+
+      opts.on('--deploy', 'deploy your site') do
+        puts 'deploy'
+      end
+
+      opts.separator ''
+      opts.separator '  Content:'
+
+      opts.on('--new:post [title]', 'create a new post') do |title|
+        if title.nil?
+          puts "you need to title your post"
+          exit 0
+        end
+        options[:title] = title
+        Statisk::CLI::New::Post.new(title: title)
+      end
+
+      opts.on('--new:page [title]', 'create a new page') do |title|
+        if title.nil?
+          puts "you need to title your page"
+          exit 0
+        end
+        options[:title] = title
+        Statisk::CLI::New::Page.new(title: title)
+      end
+
+      opts.on('--new:draft [title]', 'create a new draft') do |title|
+        if title.nil?
+          puts "you need to title your draft"
+          exit 0
+        end
+        options[:title] = title
+        Statisk::CLI::New::Draft.new(title: title)
+      end
+
+      opts.separator ''
+      opts.separator '  Common options:'
+
+      opts.on_tail('-p', '--production', 'set production settings') do |prod|
+        options.production = true
+        puts 'production = true'
+      end
+
+      opts.on_tail('-v', '--version', 'display the version') do
+        puts "statisk #{Statisk::VERSION}"
+        exit
+      end
+
+      opts.on_tail('-h', '--help', 'display the help') do
+        puts opts
+        exit
+      end
+    end
+
+    begin opts.parse!(args)
+    rescue OptionParser::InvalidOption => e
+      puts '  ' + e.to_s
+      puts ''
+      puts opts
+      exit 1
+    end
+    options
+
+  end
+end
+
+options = CLI.parse(ARGV)
+
+pp options
