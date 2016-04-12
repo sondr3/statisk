@@ -1,7 +1,9 @@
 #!/usr/bin/env ruby
 $:.unshift File.join(File.dirname(__FILE__), *%w[.. lib])
 
+require 'ostruct'
 require 'statisk'
+require 'optparse'
 
 
 banner = %Q{
@@ -102,6 +104,11 @@ class CLI
   end
 end
 
-options = CLI.parse(ARGV)
+if ARGV.empty?
+  help = "-h".split(',')
+  options = CLI.parse(help)
+else
+  options = CLI.parse(ARGV)
+end
 
-pp options
+puts options
