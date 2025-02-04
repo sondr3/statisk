@@ -34,9 +34,10 @@ pub fn folder(folder: &Path) -> Result<()> {
 
 fn compressible_files(entry: &DirEntry) -> bool {
     let is_file = entry.file_type().is_file();
-    let is_valid_extension = entry.path().extension().map_or(false, |ext| {
-        VALID_EXTENSIONS.iter().any(|valid_ext| ext == *valid_ext)
-    });
+    let is_valid_extension = entry
+        .path()
+        .extension()
+        .is_some_and(|ext| VALID_EXTENSIONS.iter().any(|valid_ext| ext == *valid_ext));
 
     is_file && is_valid_extension
 }

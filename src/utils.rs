@@ -29,7 +29,7 @@ pub fn is_visible(entry: &DirEntry) -> bool {
     !entry
         .file_name()
         .to_str()
-        .map_or(false, |s| s.starts_with('.'))
+        .is_some_and(|s| s.starts_with('.'))
 }
 
 pub fn find_files<F>(directory: &Path, filter_files: F) -> impl Iterator<Item = PathBuf>

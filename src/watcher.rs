@@ -139,5 +139,5 @@ fn event_has_extension(event: Event, extensions: &[&str]) -> Option<Event> {
 
 fn path_has_extension(path: &Path, extensions: &[&str]) -> bool {
     path.extension()
-        .map_or(false, |e| extensions.contains(&e.to_str().unwrap()))
+        .is_some_and(|e| extensions.contains(&e.to_str().unwrap()))
 }
