@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use time::Date;
+use jiff::civil::Date;
 use url::Url;
 use xml::{common::XmlVersion, writer::XmlEvent, EmitterConfig, EventWriter};
 
@@ -142,7 +142,7 @@ pub fn create(urls: Vec<UrlEntry>) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use time::{Date, Month};
+    use jiff::civil::Date;
     use url::Url;
 
     use crate::sitemap::{create, ChangeFreq, UrlEntry};
@@ -158,7 +158,7 @@ mod tests {
             ),
             UrlEntry::new(
                 Url::parse("https://example.org/").unwrap(),
-                Some(Date::from_calendar_date(2005, Month::January, 1).unwrap()),
+                Some(Date::new(2005, 1, 1).unwrap()),
                 Some(ChangeFreq::Monthly),
                 Some(0.8),
             ),
@@ -172,20 +172,20 @@ mod tests {
             UrlEntry::new(
                 Url::parse("http://www.example.com/catalog?item=73&amp;desc=vacation_new_zealand")
                     .unwrap(),
-                Some(Date::from_calendar_date(2004, Month::December, 23).unwrap()),
+                Some(Date::new(2004, 12, 23).unwrap()),
                 Some(ChangeFreq::Weekly),
                 None,
             ),
             UrlEntry::new(
                 Url::parse("http://www.example.com/catalog?item=74&amp;desc=vacation_newfoundland")
                     .unwrap(),
-                Some(Date::from_calendar_date(2004, Month::December, 23).unwrap()),
+                Some(Date::new(2004, 12, 23).unwrap()),
                 None,
                 Some(0.3),
             ),
             UrlEntry::new(
                 Url::parse("http://www.example.com/catalog?item=83&amp;desc=vacation_usa").unwrap(),
-                Some(Date::from_calendar_date(2004, Month::November, 23).unwrap()),
+                Some(Date::new(2004, 11, 23).unwrap()),
                 None,
                 None,
             ),

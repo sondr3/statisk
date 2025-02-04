@@ -1,19 +1,18 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result};
+use jiff::civil::Date;
 use jotdown::{Attributes, Container, Event, Render};
 use minijinja::{context, value::Value};
 use minijinja_autoreload::AutoReloader;
 use serde::Deserialize;
-use time::Date;
 use url::Url;
 
-use crate::{utils::toml_date_deserializer, Mode};
+use crate::Mode;
 
 #[derive(Debug, Deserialize)]
 pub struct Frontmatter {
     pub title: String,
-    #[serde(with = "toml_date_deserializer")]
     pub last_modified: Date,
     pub subtitle: Option<String>,
     pub description: String,
