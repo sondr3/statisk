@@ -116,13 +116,14 @@ async fn main() -> Result<()> {
     let fmt = tracing_subscriber::fmt::layer()
         .with_target(false)
         .with_timer(timer);
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| format!("web={}", if opts.verbose { "debug" } else { "info" }).into());
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| {
+        format!("statisk={}", if opts.verbose { "debug" } else { "info" }).into()
+    });
 
     tracing_subscriber::registry().with(filter).with(fmt).init();
 
     let cwd = current_dir()?;
-    let config = cwd.join("statisk.toml");
+    let config = cwd.join("../example/statisk.toml");
     let config = Config::from_path(&config)?;
 
     dbg!(config);

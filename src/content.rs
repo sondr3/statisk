@@ -13,7 +13,7 @@ use crate::Mode;
 #[derive(Debug, Deserialize)]
 pub struct Frontmatter {
     pub title: String,
-    pub last_modified: Date,
+    pub last_modified: Option<Date>,
     pub subtitle: Option<String>,
     pub description: String,
     pub slug: Option<String>,

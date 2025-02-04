@@ -65,7 +65,7 @@ impl UrlEntry {
 
         Ok(UrlEntry::new(
             url,
-            Some(value.frontmatter.last_modified),
+            value.frontmatter.last_modified,
             Some(ChangeFreq::Monthly),
             None,
         ))
