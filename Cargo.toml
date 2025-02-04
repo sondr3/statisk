@@ -13,13 +13,15 @@ grass = { version = "0.13.1", default-features = false }
 jiff = { version = "0.1.29", features = ["serde"] }
 jotdown = "0.3.0"
 lightningcss = { version = "1.0.0-alpha.44", default-features = false, features = ["browserslist", "grid"] }
-minify-html = "0.11.1"
 minijinja = { version = "1.0.5", features = ["loader", "speedups"] }
 minijinja-autoreload = "1.0.5"
 notify = "6.1.1"
-once_cell = "1.18.0"
 serde = { version = "1.0.176", features = ["derive"] }
 sha1_smol = { version = "1.0.0", features = ["std"] }
+swc_common = "6.0.0"
+swc_html_codegen = "6.0.0"
+swc_html_minifier = "10.0.0"
+swc_html_parser = "6.0.0"
 time = { version = "0.3.37", features = ["serde-human-readable", "local-offset"] }
 tokio = { version = "1.32.0", features = ["full"] }
 toml = "0.7.6"

@@ -4,22 +4,34 @@ use lightningcss::{
     stylesheet::{MinifyOptions, ParserOptions, StyleSheet},
     targets::{Browsers, Targets},
 };
-use minify_html::Cfg;
+use swc_common::{BytePos, FileName, SourceFile};
+use swc_html_codegen::writer::basic::BasicHtmlWriter;
+use swc_html_codegen::{CodeGenerator, CodegenConfig, Emit};
+use swc_html_minifier::minify_document;
+use swc_html_parser::parse_file_as_document;
 
-pub fn html(content: &[u8], cfg: &Cfg) -> Vec<u8> {
-    minify_html::minify(content, cfg)
-}
-
-pub fn html_minifier_config() -> Cfg {
-    Cfg {
-        minify_js: true,
-        minify_css: true,
-        keep_comments: false,
-        keep_html_and_head_opening_tags: true,
-        remove_bangs: true,
-        remove_processing_instructions: true,
-        ..Cfg::spec_compliant()
-    }
+pub fn html(content: String) -> Result<Vec<u8>> {
+    let source_file = SourceFile::new(
+        FileName::Anon.into(),
+        false,
+        FileName::Anon.into(),
+        content,
+        BytePos(1),
+    );
+    let mut errors = vec![];
+    let mut document =
+        parse_file_as_document(&source_file, Default::default(), &mut errors).unwrap();
+    minify_document(&mut document, &Default::default());
+    let mut minified_source = String::new();
+    let mut code_generator = CodeGenerator::new(
+        BasicHtmlWriter::new(&mut minified_source, None, Default::default()),
+        CodegenConfig {
+            minify: true,
+            ..CodegenConfig::default()
+        },
+    );
+    code_generator.emit(&document).unwrap();
+    Ok(minified_source.into())
 }
 
 pub fn css(content: &str) -> Result<String> {
@@ -46,4 +58,28 @@ pub fn css(content: &str) -> Result<String> {
 
     let res = stylesheet.to_css(printer_opts)?;
     Ok(res.code)
+}
+
+#[cfg(test)]
+mod tests {
+
+    #[test]
+    fn test_minify_html() {
+        let html = r#"
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Test</title>
+  </head>
+  <body>
+    <h1>Hello</h1>
+    <p class="test">World</p>
+  </body>
+</html>        
+        "#
+        .trim();
+        let minified = String::from_utf8(super::html(html.to_string()).unwrap()).unwrap();
+        insta::assert_snapshot!(minified);
+    }
 }
