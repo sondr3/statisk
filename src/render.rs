@@ -10,6 +10,7 @@ use crate::{
     context::Context,
     minify::{self, html_minifier_config},
     sitemap,
+    sitemap::UrlEntry,
     utils::{copy_file, write_file},
     Mode,
 };
@@ -95,7 +96,14 @@ where
 }
 
 pub fn write_sitemap(dest: &Path, context: &Context) -> Result<()> {
-    let sitemap = sitemap::create(context)?;
+    let urls: Vec<_> = context
+        .pages
+        .values()
+        .filter(|p| !p.frontmatter.special)
+        .map(|e| UrlEntry::from_content(e, &context.metadata.url))
+        .collect::<Result<Vec<_>>>()?;
+
+    let sitemap = sitemap::create(urls)?;
     write_file(&dest.join("sitemap.xml"), sitemap)
 }
 

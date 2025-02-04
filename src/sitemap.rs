@@ -1,15 +1,16 @@
-use std::fmt::{self, Display, Formatter};
+use std::{
+    fmt::{self, Display, Formatter},
+    io::Write,
+};
 
-use anyhow::Result;
-use quick_xml::se::Serializer;
-use serde::{Deserialize, Serialize};
+use anyhow::{Context, Result};
 use time::Date;
 use url::Url;
+use xml::{common::XmlVersion, writer::XmlEvent, EmitterConfig, EventWriter};
 
-use crate::{content::Content, context::Context};
+use crate::content::Content;
 
-#[derive(Debug, Deserialize, Serialize, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
 pub enum ChangeFreq {
     Always,
     Hourly,
@@ -34,30 +35,12 @@ impl Display for ChangeFreq {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug)]
 pub struct UrlEntry {
     pub loc: Url,
-    #[serde(rename = "lastmod")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub last_mod: Option<Date>,
-    #[serde(rename = "changefreq")]
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub change_freq: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub priority: Option<f32>,
-}
-
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename = "urlset")]
-pub struct UrlSet {
-    #[serde(rename = "@xmlns")]
-    pub xmlns: String,
-    #[serde(rename = "@xmlns:image")]
-    pub xmlns_image: String,
-    #[serde(rename = "@xmlns:video")]
-    pub xmlns_video: String,
-    #[serde(rename = "url")]
-    pub urls: Vec<UrlEntry>,
 }
 
 impl UrlEntry {
@@ -87,36 +70,128 @@ impl UrlEntry {
             None,
         ))
     }
+
+    pub fn to_xml<W: Write>(&self, writer: &mut EventWriter<W>) -> Result<()> {
+        writer.write(XmlEvent::start_element("url"))?;
+
+        writer.write(XmlEvent::start_element("loc"))?;
+        writer.write(&*self.loc.to_string())?;
+        writer.write(XmlEvent::end_element())?;
+
+        if let Some(last_mod) = &self.last_mod {
+            writer.write(XmlEvent::start_element("lastmod"))?;
+            writer.write(&*last_mod.to_string())?;
+            writer.write(XmlEvent::end_element())?;
+        }
+        if let Some(change_freq) = &self.change_freq {
+            writer.write(XmlEvent::start_element("changefreq"))?;
+            writer.write(change_freq.as_str())?;
+            writer.write(XmlEvent::end_element())?;
+        }
+        if let Some(priority) = &self.priority {
+            writer.write(XmlEvent::start_element("priority"))?;
+            writer.write(priority.to_string().as_str())?;
+            writer.write(XmlEvent::end_element())?;
+        }
+
+        writer.write(XmlEvent::end_element())?;
+        Ok(())
+    }
 }
 
-pub fn create(context: &Context) -> Result<String> {
-    let urls: Result<Vec<_>, _> = context
-        .pages
-        .values()
-        .filter(|p| !p.frontmatter.special)
-        .map(|e| UrlEntry::from_content(e, &context.metadata.url))
-        .collect();
+pub fn create(urls: Vec<UrlEntry>) -> Result<String> {
+    let mut res = Vec::new();
+    let mut writer = EmitterConfig::new()
+        .perform_indent(true)
+        .create_writer(&mut res);
 
-    let mut root = r#"
-<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet href="/sitemap-style.xsl" type="text/xsl"?>
-    "#
-    .trim_start()
-    .to_string();
-
-    let url_set = UrlSet {
-        xmlns: "http://www.sitemaps.org/schemas/sitemap/0.9".to_string(),
-        xmlns_image: "http://www.google.com/schemas/sitemap-image/1.1".to_string(),
-        xmlns_video: "http://www.google.com/schemas/sitemap-video/1.1".to_string(),
-        urls: urls?,
+    let doc = XmlEvent::StartDocument {
+        version: XmlVersion::Version10,
+        encoding: Some("UTF-8"),
+        standalone: None,
     };
 
-    let mut buffer = String::new();
-    let mut ser = Serializer::new(&mut buffer);
-    ser.indent(' ', 2);
+    writer.write(doc)?;
 
-    url_set.serialize(ser)?;
-    root.push_str(&buffer);
+    let stylesheet = XmlEvent::start_element("xml-stylesheet")
+        .attr("type", "text/xsl")
+        .attr("href", "/sitemap-style.xsl");
 
-    Ok(root)
+    writer.write(stylesheet)?;
+    writer.write(XmlEvent::end_element())?;
+
+    let url_set = XmlEvent::start_element("urlset")
+        .attr("@xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9")
+        .attr(
+            "@xmlns:image",
+            "http://www.google.com/schemas/sitemap-image/1.1",
+        )
+        .attr(
+            "@xmlns:video",
+            "http://www.google.com/schemas/sitemap-video/1.1",
+        );
+
+    writer.write(url_set)?;
+
+    for url in urls {
+        url.to_xml(&mut writer)?;
+    }
+
+    String::from_utf8(res).context("Sitemap failed to serialize")
+}
+
+#[cfg(test)]
+mod tests {
+    use time::{Date, Month};
+    use url::Url;
+
+    use crate::sitemap::{create, ChangeFreq, UrlEntry};
+
+    #[test]
+    fn test_sitemap() {
+        let urls = vec![
+            UrlEntry::new(
+                Url::parse("http://www.example.com/").unwrap(),
+                None,
+                None,
+                None,
+            ),
+            UrlEntry::new(
+                Url::parse("https://example.org/").unwrap(),
+                Some(Date::from_calendar_date(2005, Month::January, 1).unwrap()),
+                Some(ChangeFreq::Monthly),
+                Some(0.8),
+            ),
+            UrlEntry::new(
+                Url::parse("http://www.example.com/catalog?item=12&amp;desc=vacation_hawaii")
+                    .unwrap(),
+                None,
+                Some(ChangeFreq::Weekly),
+                None,
+            ),
+            UrlEntry::new(
+                Url::parse("http://www.example.com/catalog?item=73&amp;desc=vacation_new_zealand")
+                    .unwrap(),
+                Some(Date::from_calendar_date(2004, Month::December, 23).unwrap()),
+                Some(ChangeFreq::Weekly),
+                None,
+            ),
+            UrlEntry::new(
+                Url::parse("http://www.example.com/catalog?item=74&amp;desc=vacation_newfoundland")
+                    .unwrap(),
+                Some(Date::from_calendar_date(2004, Month::December, 23).unwrap()),
+                None,
+                Some(0.3),
+            ),
+            UrlEntry::new(
+                Url::parse("http://www.example.com/catalog?item=83&amp;desc=vacation_usa").unwrap(),
+                Some(Date::from_calendar_date(2004, Month::November, 23).unwrap()),
+                None,
+                None,
+            ),
+        ];
+
+        let sitemap = create(urls).unwrap();
+        insta::assert_snapshot!(sitemap);
+    }
 }
