@@ -24,7 +24,7 @@ swc_html_minifier = "10.0.0"
 swc_html_parser = "6.0.0"
 time = { version = "0.3.37", features = ["serde-human-readable", "local-offset"] }
 tokio = { version = "1.32.0", features = ["full"] }
-toml = "0.7.6"
+toml = "0.8.19"
 tower-http = { version = "0.4.4", features = ["fs", "trace"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "time"] }

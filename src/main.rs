@@ -1,5 +1,6 @@
 mod asset;
 mod compress;
+mod config;
 mod constants;
 mod content;
 mod context;
@@ -11,15 +12,16 @@ mod sitemap;
 mod utils;
 mod watcher;
 
-use std::{fmt::Display, thread, time::Instant};
-
 use anyhow::Result;
+use std::env::current_dir;
+use std::{fmt::Display, thread, time::Instant};
 use time::UtcOffset;
 use tokio::sync::broadcast;
 use tracing_subscriber::{
     fmt::time::OffsetTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };
 
+use crate::config::Config;
 use crate::{
     constants::Paths, context::Metadata, context_builder::ContextBuilder, render::Renderer,
     watcher::start_live_reload,
@@ -118,6 +120,12 @@ async fn main() -> Result<()> {
         .unwrap_or_else(|_| format!("web={}", if opts.verbose { "debug" } else { "info" }).into());
 
     tracing_subscriber::registry().with(filter).with(fmt).init();
+
+    let cwd = current_dir()?;
+    let config = cwd.join("statisk.toml");
+    let config = Config::from_path(&config)?;
+
+    dbg!(config);
 
     if opts.help {
         println!("{HELP_MESSAGE}");
