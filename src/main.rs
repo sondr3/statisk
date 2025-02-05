@@ -12,16 +12,10 @@ mod sitemap;
 mod utils;
 mod watcher;
 
-use std::{
-    env::current_dir,
-    fmt::Display,
-    path::{Path, PathBuf},
-    thread,
-    time::Instant,
-};
+use std::{env::current_dir, fmt::Display, path::PathBuf, thread, time::Instant};
 
 use anyhow::{bail, Result};
-use clap::{Command, Parser, Subcommand, ValueEnum, ValueHint};
+use clap::{Parser, Subcommand, ValueEnum, ValueHint};
 use time::UtcOffset;
 use tokio::sync::broadcast;
 use tracing_subscriber::{
@@ -32,19 +26,6 @@ use crate::{
     config::Config, constants::Paths, context::Metadata, context_builder::ContextBuilder,
     render::Renderer, watcher::start_live_reload,
 };
-
-const HELP_MESSAGE: &str = r#"
-web - website generator
-
-Options:
-  -s, --server      Disable dev server
-  -p, --production  Optimize output
-  -v, --verbose     Verbose output
-  -h, --help        This message
-  
-Environment variables:
-  CI,PROD           Optimize output
-"#;
 
 #[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum Mode {
@@ -125,7 +106,7 @@ async fn main() -> Result<()> {
     };
 
     let paths = Paths::new(root);
-    let config = match Config::from_path(&paths.root.join("statisk.toml")) {
+    let _config = match Config::from_path(&paths.root.join("statisk.toml")) {
         Ok(config) => config,
         Err(_) => bail!("could not find a `statisk.toml` file"),
     };

@@ -1,6 +1,4 @@
-use std::path::{Path, PathBuf};
-
-use anyhow::Result;
+use std::path::PathBuf;
 
 pub const OUT_PATH: &str = "_dist";
 pub const TEMPLATE_PATH: &str = "templates";

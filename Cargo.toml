@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 ahash = "0.8.3"
 anyhow = "1.0.72"
-axum = { version = "0.6.20", features = ["ws"] }
+axum = { version = "0.8.1", features = ["ws"] }
 brotli = "3.3.4"
 clap = { version = "4.5.28", features = ["derive"] }
 flate2 = "1.0.26"
@@ -16,7 +16,7 @@ jotdown = "0.3.0"
 lightningcss = { version = "1.0.0-alpha.44", default-features = false, features = ["browserslist", "grid"] }
 minijinja = { version = "1.0.5", features = ["loader", "speedups"] }
 minijinja-autoreload = "1.0.5"
-notify = "6.1.1"
+notify = "8.0.0"
 serde = { version = "1.0.176", features = ["derive"] }
 sha1_smol = { version = "1.0.0", features = ["std"] }
 swc_common = "6.0.0"
@@ -26,11 +26,11 @@ swc_html_parser = "6.0.0"
 time = { version = "0.3.37", features = ["serde-human-readable", "local-offset"] }
 tokio = { version = "1.32.0", features = ["full"] }
 toml = "0.8.19"
-tower-http = { version = "0.4.4", features = ["fs", "trace"] }
+tower-http = { version = "0.6.2", features = ["fs", "trace"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "time"] }
 url = { version = "2.4.0", features = ["serde"] }
-walkdir = "2.3.3"
+walkdir = "2.5.0"
 xml-rs = "0.8.25"
 
 [dev-dependencies]
