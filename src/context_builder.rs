@@ -18,8 +18,7 @@ pub struct ContextBuilder {
 
 impl ContextBuilder {
     pub fn new(paths: &Paths, mode: Mode) -> Result<Self> {
-        let mut pages = collect_pages(paths)?;
-        pages.append(&mut collect_posts(paths)?);
+        let pages = collect_content(paths)?;
 
         let mut assets = AHashMap::new();
         assets.insert("styles.css".to_string(), Asset::build_css(paths, mode)?);
@@ -55,15 +54,9 @@ fn collect_js(paths: &Paths) -> Result<Vec<Asset>> {
         .collect()
 }
 
-pub fn collect_pages(paths: &Paths) -> Result<Vec<Content>> {
-    find_files(&paths.pages, is_file)
+pub fn collect_content(paths: &Paths) -> Result<Vec<Content>> {
+    find_files(&paths.content, is_file)
         .map(|f| Content::from_path(&f, Type::Page))
-        .collect()
-}
-
-pub fn collect_posts(paths: &Paths) -> Result<Vec<Content>> {
-    find_files(&paths.posts, is_file)
-        .map(|f| Content::from_path(&f, Type::Post))
         .collect()
 }
 

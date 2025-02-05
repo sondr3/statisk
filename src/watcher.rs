@@ -14,7 +14,7 @@ use crate::{
     asset::Asset,
     constants::Paths,
     context::Context as AppContext,
-    context_builder::{collect_pages, collect_posts},
+    context_builder::collect_content,
     render::{write_asset, write_pages_iter},
     Mode,
 };
@@ -48,7 +48,7 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate:
 fn css_watch_handler(paths: &Paths, event: &Event, tx: &Sender<crate::Event>) -> Result<()> {
     tracing::info!(
         "File(s) {:?} changed, rebuilding CSS",
-        strip_prefix_paths(&paths.source, &event.paths)?
+        strip_prefix_paths(&paths.root, &event.paths)?
     );
     let css = Asset::build_css(paths, Mode::Dev)?;
     write_asset(&paths.out, &css)?;
@@ -65,11 +65,10 @@ fn content_watch_handler(
 ) -> Result<()> {
     tracing::info!(
         "File(s) {:?} changed, rebuilding site",
-        strip_prefix_paths(&paths.source, &event.paths)?
+        strip_prefix_paths(&paths.root, &event.paths)?
     );
     let url = Url::parse("http://localhost:3000")?;
-    let mut pages = collect_pages(paths)?;
-    pages.append(&mut collect_posts(paths)?);
+    let pages = collect_content(paths)?;
     write_pages_iter(
         &paths.out,
         "styles.css",
