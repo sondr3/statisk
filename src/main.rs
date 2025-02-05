@@ -12,19 +12,25 @@ mod sitemap;
 mod utils;
 mod watcher;
 
-use anyhow::Result;
-use std::env::current_dir;
-use std::{fmt::Display, thread, time::Instant};
+use std::{
+    env::current_dir,
+    fmt::Display,
+    path::{Path, PathBuf},
+    thread,
+    time::Instant,
+};
+
+use anyhow::{bail, Result};
+use clap::{Command, Parser, Subcommand, ValueEnum, ValueHint};
 use time::UtcOffset;
 use tokio::sync::broadcast;
 use tracing_subscriber::{
     fmt::time::OffsetTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };
 
-use crate::config::Config;
 use crate::{
-    constants::Paths, context::Metadata, context_builder::ContextBuilder, render::Renderer,
-    watcher::start_live_reload,
+    config::Config, constants::Paths, context::Metadata, context_builder::ContextBuilder,
+    render::Renderer, watcher::start_live_reload,
 };
 
 const HELP_MESSAGE: &str = r#"
@@ -40,16 +46,16 @@ Environment variables:
   CI,PROD           Optimize output
 "#;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum Mode {
-    Prod,
+    Build,
     Dev,
 }
 
 impl Display for Mode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Mode::Prod => write!(f, "prod"),
+            Mode::Build => write!(f, "build"),
             Mode::Dev => write!(f, "dev"),
         }
     }
@@ -58,46 +64,37 @@ impl Display for Mode {
 impl Mode {
     #[must_use]
     pub const fn is_prod(&self) -> bool {
-        matches!(self, Self::Prod)
+        matches!(self, Self::Build)
     }
 
     #[must_use]
     pub const fn is_dev(&self) -> bool {
         matches!(self, Self::Dev)
     }
-
-    #[must_use]
-    pub fn from_args(args: &[String]) -> Self {
-        if std::env::var("CI").is_ok()
-            || std::env::var("PROD").is_ok()
-            || args.iter().any(|e| e == "-p" || e == "--production")
-        {
-            Mode::Prod
-        } else {
-            Mode::Dev
-        }
-    }
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct Options {
-    pub server: bool,
-    pub mode: Mode,
+#[derive(Debug, Parser)]
+#[command(version, about, author)]
+#[clap(args_conflicts_with_subcommands = true)]
+struct Options {
+    #[arg(long, short)]
     pub verbose: bool,
-    pub help: bool,
+    /// Directory to run in
+    #[arg(value_hint = ValueHint::DirPath, value_name = "dir", global = true)]
+    pub dir: Option<PathBuf>,
+    /// Configuration management
+    #[command(subcommand)]
+    pub cmd: Option<Cmds>,
 }
 
-impl Options {
-    fn from_args() -> Self {
-        let args: Vec<_> = std::env::args().skip(1).collect();
-
-        Self {
-            server: !args.iter().any(|e| e == "-s" || e == "--server"),
-            mode: Mode::from_args(&args),
-            verbose: args.iter().any(|e| e == "-v" || e == "--verbose"),
-            help: args.iter().any(|e| e == "-h" || e == "--help"),
-        }
-    }
+#[derive(Subcommand, Debug)]
+pub enum Cmds {
+    /// start the dev loop
+    Dev,
+    /// build for production
+    Build,
+    /// start a local server
+    Serve,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -108,7 +105,7 @@ pub enum Event {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let opts = Options::from_args();
+    let opts = Options::parse();
 
     let offset = UtcOffset::current_local_offset().map_or(UtcOffset::UTC, |o| o);
     let format = time::format_description::parse("[hour]:[minute]:[second]")?;
@@ -122,24 +119,38 @@ async fn main() -> Result<()> {
 
     tracing_subscriber::registry().with(filter).with(fmt).init();
 
-    let cwd = current_dir()?;
-    let config = cwd.join("../example/statisk.toml");
-    let config = Config::from_path(&config)?;
+    let root = match opts.dir {
+        None => current_dir()?,
+        Some(dir) => dir.canonicalize()?,
+    };
 
-    dbg!(config);
+    let paths = Paths::new(root);
+    let config = match Config::from_path(&paths.root.join("statisk.toml")) {
+        Ok(config) => config,
+        Err(_) => bail!("could not find a `statisk.toml` file"),
+    };
 
-    if opts.help {
-        println!("{HELP_MESSAGE}");
-        return Ok(());
+    match opts.cmd {
+        None | Some(Cmds::Dev) => {
+            tracing::info!("dev mode engaged...");
+        }
+        Some(Cmds::Build) => {
+            tracing::info!("building for production...");
+        }
+        Some(Cmds::Serve) => {
+            tracing::info!("serving locally...");
+        }
     }
 
-    tracing::info!("Running in {} mode...", opts.mode);
+    let mode = match opts.cmd {
+        None | Some(Cmds::Dev) => Mode::Dev,
+        Some(Cmds::Build) | Some(Cmds::Serve) => Mode::Build,
+    };
 
     let now = Instant::now();
 
-    let paths = Paths::new();
-    let metadata = Metadata::new(opts.mode)?;
-    let context = ContextBuilder::new(&paths, opts.mode)?.build(&paths, metadata, opts.mode);
+    let metadata = Metadata::new(mode)?;
+    let context = ContextBuilder::new(&paths, mode)?.build(&paths, metadata, mode);
     let renderer = Renderer::new(&paths.out);
 
     renderer.render_context(&context)?;
@@ -151,23 +162,31 @@ async fn main() -> Result<()> {
         done.as_millis()
     );
 
-    if opts.mode.is_dev() && opts.server {
-        let (tx, _rx) = broadcast::channel(100);
-        let root = paths.out.clone();
-        let watcher_tx = tx.clone();
-        let watcher = thread::spawn(move || start_live_reload(&paths, &context, &watcher_tx));
+    match opts.cmd {
+        None | Some(Cmds::Dev) => {
+            let (tx, _rx) = broadcast::channel(100);
+            let root = paths.out.clone();
+            let watcher_tx = tx.clone();
+            let watcher = thread::spawn(move || start_live_reload(&paths, &context, &watcher_tx));
 
-        tracing::info!("Serving site at http://localhost:3000/...");
-        server::create(&root, tx).await?;
+            tracing::info!("serving site at http://localhost:3000/...");
+            server::create(&root, tx).await?;
 
-        watcher.join().unwrap();
-    } else if opts.mode.is_prod() {
-        let now = Instant::now();
+            watcher.join().unwrap();
+        }
+        Some(Cmds::Build) => {
+            let now = Instant::now();
 
-        compress::folder(&paths.out)?;
+            compress::folder(&paths.out)?;
 
-        let done = now.elapsed();
-        tracing::info!("Finished compressing output in {:?}ms", done.as_millis());
+            let done = now.elapsed();
+            tracing::info!("Finished compressing output in {:?}ms", done.as_millis());
+        }
+        Some(Cmds::Serve) => {
+            tracing::info!("serving site at http://localhost:3000/...");
+            let (tx, _) = broadcast::channel(100);
+            server::create(&paths.out, tx).await?;
+        }
     }
 
     Ok(())

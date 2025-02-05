@@ -5,8 +5,7 @@ use lightningcss::{
     targets::{Browsers, Targets},
 };
 use swc_common::{BytePos, FileName, SourceFile};
-use swc_html_codegen::writer::basic::BasicHtmlWriter;
-use swc_html_codegen::{CodeGenerator, CodegenConfig, Emit};
+use swc_html_codegen::{writer::basic::BasicHtmlWriter, CodeGenerator, CodegenConfig, Emit};
 use swc_html_minifier::minify_document;
 use swc_html_parser::parse_file_as_document;
 

@@ -23,7 +23,7 @@ impl Metadata {
     pub fn new(mode: Mode) -> Result<Self> {
         Ok(Self {
             url: match mode {
-                Mode::Prod => Url::parse("https://www.eons.io")?,
+                Mode::Build => Url::parse("https://www.eons.io")?,
                 Mode::Dev => Url::parse("http://localhost:3000")?,
             },
             out: PathBuf::from(OUT_PATH),

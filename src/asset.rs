@@ -35,7 +35,7 @@ impl Asset {
         let content = grass::from_path(source, &grass::Options::default())?;
 
         Ok(match mode {
-            Mode::Prod => Self {
+            Mode::Build => Self {
                 filename: digest_filename(&path, &content),
                 content: minify::css(&content.clone())?,
             },

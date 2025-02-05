@@ -1,7 +1,7 @@
+use std::{fs::read_to_string, path::Path};
+
 use anyhow::{Context, Result};
 use serde::Deserialize;
-use std::fs::read_to_string;
-use std::path::Path;
 use url::Url;
 
 #[derive(Debug, Deserialize)]
