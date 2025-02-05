@@ -127,6 +127,7 @@ impl Content {
             title => self.frontmatter.title.clone(),
             subtitle => self.frontmatter.subtitle.clone(),
             description => self.frontmatter.description.clone(),
+            mode => mode,
             is_dev => mode.is_dev(),
             canonical_url => url.join(&self.url)?,
             content => content,

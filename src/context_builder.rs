@@ -1,12 +1,14 @@
+use std::path::Path;
+
 use ahash::AHashMap;
 use anyhow::Result;
 
 use crate::{
     asset::{Asset, PublicFile},
-    constants::Paths,
+    constants::{Paths, LIVERELOAD_JS},
     content::{Content, Type},
     context::{Context, Metadata},
-    utils::{find_files, is_file},
+    utils::{filename, find_files, is_file},
     Mode,
 };
 
@@ -22,6 +24,15 @@ impl ContextBuilder {
 
         let mut assets = AHashMap::new();
         assets.insert("styles.css".to_string(), Asset::build_css(paths, mode)?);
+        if mode.is_dev() {
+            assets.insert(
+                "livereload.js".to_string(),
+                Asset {
+                    filename: filename(paths.out.join(Path::new("livereload.js"))),
+                    content: LIVERELOAD_JS.to_string(),
+                },
+            );
+        }
         collect_js(paths)?.into_iter().for_each(|a| {
             assets.insert(a.filename.clone(), a);
         });

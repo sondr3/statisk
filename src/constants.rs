@@ -7,6 +7,8 @@ pub const CSS_PATH: &str = "styles";
 pub const JS_PATH: &str = "js";
 pub const CONTENT_PATH: &str = "content";
 
+pub const LIVERELOAD_JS: &str = include_str!("livereload.js");
+
 #[derive(Debug, Clone)]
 pub struct Paths {
     pub root: PathBuf,

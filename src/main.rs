@@ -16,6 +16,7 @@ use std::{env::current_dir, fmt::Display, path::PathBuf, thread, time::Instant};
 
 use anyhow::{bail, Result};
 use clap::{Parser, Subcommand, ValueEnum, ValueHint};
+use serde::Serialize;
 use time::UtcOffset;
 use tokio::sync::broadcast;
 use tracing_subscriber::{
@@ -27,7 +28,7 @@ use crate::{
     render::Renderer, watcher::start_live_reload,
 };
 
-#[derive(Debug, Copy, Clone, ValueEnum)]
+#[derive(Debug, Copy, Clone, ValueEnum, Serialize)]
 pub enum Mode {
     Build,
     Dev,

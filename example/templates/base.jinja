@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="light">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
     <title>{{ title|safe }} => Site</title>
-    <meta content="{{ description|safe }}" name="description" />
+    <meta content="{{ description|safe }}" name="description"/>
 
-  </head>
-  <body class="root">
-    {% include "navbar.jinja" %}
-    {% block content %}
-    <p>Placeholder...</p>
-    {% endblock %}
-    {% include "footer.jinja" %}
-  </body>
+    {% if is_dev %}
+    <script src="/livereload.js"></script>
+    {% endif %}
+</head>
+<body class="root">
+{% include "navbar.jinja" %}
+{% block content %}
+<p>Placeholder...</p>
+{% endblock %}
+{% include "footer.jinja" %}
+</body>
 </html>

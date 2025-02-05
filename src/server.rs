@@ -27,9 +27,12 @@ pub async fn create(root: &Path, tx: Sender<Event>) -> Result<()> {
     let addr = SocketAddr::from((Ipv4Addr::LOCALHOST, 3000));
     let listener = TcpListener::bind(addr).await?;
 
-    axum::serve(listener, router(root, tx).layer(TraceLayer::new_for_http()))
-        .await
-        .context("Failed to start server")
+    axum::serve(
+        listener,
+        router(root, tx).into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .context("Failed to start server")
 }
 
 fn router(root: &Path, tx: Sender<Event>) -> Router {
@@ -39,7 +42,8 @@ fn router(root: &Path, tx: Sender<Event>) -> Router {
                 .append_index_html_on_directories(true)
                 .not_found_service(ServeFile::new(root.join("404/index.html"))),
         )
-        .route("/ws", get(ws_handler))
+        .route("/_ws", get(ws_handler))
+        .layer(TraceLayer::new_for_http())
         .with_state(tx)
 }
 
@@ -52,7 +56,7 @@ async fn ws_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, tx: Sender<Event>, addr: SocketAddr) {
-    tracing::info!("{addr} connected");
+    tracing::debug!("{addr} connected");
     let mut rx = tx.subscribe();
 
     while let Ok(event) = rx.recv().await {

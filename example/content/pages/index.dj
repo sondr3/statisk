@@ -1,6 +1,6 @@
 +++
 title = "Home"
-description = "Hello, world!"
+description = "Hello, world"
 layout = "index"
 slug = ""
 +++
