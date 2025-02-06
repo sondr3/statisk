@@ -1,12 +1,9 @@
-use std::{
-    path::{Path, PathBuf},
-    thread,
-};
-
+use ahash::HashSet;
 use anyhow::{Context, Result};
 use notify::{
     event::ModifyKind, Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher,
 };
+use std::{path::Path, thread};
 use tokio::sync::broadcast::Sender;
 use url::Url;
 
@@ -22,20 +19,29 @@ use crate::{
 pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate::Event>) {
     thread::scope(|scope| {
         let css = scope.spawn(|| {
-            file_watcher(&paths.styles.canonicalize()?, &["scss"], |event| {
-                css_watch_handler(paths, &event, tx)
+            file_watcher(&paths.css.canonicalize()?, &["css"], |event| {
+                for path in event.paths.iter().collect::<HashSet<_>>() {
+                    css_watch_handler(paths, path, tx)?;
+                }
+                Ok(())
             })
         });
 
         let content = scope.spawn(|| {
             file_watcher(&paths.content.canonicalize()?, &["dj", "toml"], |event| {
-                content_watch_handler(paths, &event, context, tx)
+                for path in event.paths.iter().collect::<HashSet<_>>() {
+                    content_watch_handler(paths, path, context, tx)?;
+                }
+                Ok(())
             })
         });
 
         let templates = scope.spawn(|| {
             file_watcher(&paths.templates.canonicalize()?, &["jinja"], |event| {
-                content_watch_handler(paths, &event, context, tx)
+                for path in event.paths.iter().collect::<HashSet<_>>() {
+                    content_watch_handler(paths, path, context, tx)?;
+                }
+                Ok(())
             })
         });
 
@@ -45,10 +51,10 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate:
     });
 }
 
-fn css_watch_handler(paths: &Paths, event: &Event, tx: &Sender<crate::Event>) -> Result<()> {
+fn css_watch_handler(paths: &Paths, path: &Path, tx: &Sender<crate::Event>) -> Result<()> {
     tracing::info!(
         "File(s) {:?} changed, rebuilding CSS",
-        strip_prefix_paths(&paths.root, &event.paths)?
+        strip_prefix_paths(&paths.root, &path)?
     );
     let css = Asset::build_css(paths, Mode::Dev)?;
     write_asset(&paths.out, &css)?;
@@ -59,13 +65,13 @@ fn css_watch_handler(paths: &Paths, event: &Event, tx: &Sender<crate::Event>) ->
 
 fn content_watch_handler(
     paths: &Paths,
-    event: &Event,
+    path: &Path,
     context: &AppContext,
     tx: &Sender<crate::Event>,
 ) -> Result<()> {
     tracing::info!(
         "File(s) {:?} changed, rebuilding site",
-        strip_prefix_paths(&paths.root, &event.paths)?
+        strip_prefix_paths(&paths.root, &path)?
     );
     let url = Url::parse("http://localhost:3000")?;
     let pages = collect_content(paths)?;
@@ -82,14 +88,9 @@ fn content_watch_handler(
     Ok(())
 }
 
-fn strip_prefix_paths(prefix: impl AsRef<Path>, paths: &[PathBuf]) -> Result<Vec<&Path>> {
-    paths
-        .iter()
-        .map(|p| {
-            p.strip_prefix(prefix.as_ref().canonicalize()?)
-                .context("could not strip prefix")
-        })
-        .collect()
+fn strip_prefix_paths(prefix: impl AsRef<Path>, path: &Path) -> Result<&Path> {
+    path.strip_prefix(prefix.as_ref().canonicalize()?)
+        .context("could not strip prefix")
 }
 
 fn file_watcher<F, const N: usize>(path: &Path, extensions: &[&str; N], handler: F) -> Result<()>
