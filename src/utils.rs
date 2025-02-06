@@ -63,7 +63,7 @@ pub fn write_file(path: &Path, content: impl AsRef<[u8]>) -> Result<()> {
     Ok(())
 }
 
-pub fn digest_filename(filename: &Path, content: &str) -> String {
+pub fn digest_filename(filename: &Path, content: &str) -> PathBuf {
     let digest = Sha1::from(content).hexdigest();
     let hash = digest.split_at(8).0;
     let Some(extension) = filename.extension() else {
@@ -73,8 +73,6 @@ pub fn digest_filename(filename: &Path, content: &str) -> String {
     PathBuf::from(filename)
         .with_extension(hash)
         .append_extension(extension)
-        .display()
-        .to_string()
 }
 
 pub fn filename(path: impl Into<PathBuf>) -> String {
@@ -105,9 +103,10 @@ pub mod toml_date_option_deserializer {
 }
 
 pub mod toml_date_deserializer {
-    use super::toml_date_option_deserializer;
     use jiff::civil::Date;
     use serde::{self, Deserializer};
+
+    use super::toml_date_option_deserializer;
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
     where

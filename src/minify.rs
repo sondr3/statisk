@@ -6,8 +6,10 @@ use lightningcss::{
 };
 use swc_common::{BytePos, FileName, SourceFile};
 use swc_html_codegen::{writer::basic::BasicHtmlWriter, CodeGenerator, CodegenConfig, Emit};
-use swc_html_minifier::minify_document;
-use swc_html_minifier::option::{CollapseWhitespaces, MinifyJsOption, RemoveRedundantAttributes};
+use swc_html_minifier::{
+    minify_document,
+    option::{CollapseWhitespaces, MinifyJsOption, RemoveRedundantAttributes},
+};
 use swc_html_parser::parse_file_as_document;
 
 pub fn html(content: String) -> Result<Vec<u8>> {

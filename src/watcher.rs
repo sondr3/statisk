@@ -1,18 +1,23 @@
+use std::{
+    path::{Path, PathBuf},
+    thread,
+};
+
 use ahash::HashSet;
 use anyhow::{Context, Result};
 use notify::{
     event::ModifyKind, Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher,
 };
-use std::{path::Path, thread};
 use tokio::sync::broadcast::Sender;
 use url::Url;
 
 use crate::{
-    asset::Asset,
+    asset::{is_buildable_css_file, Asset},
     constants::Paths,
     context::Context as AppContext,
     context_builder::collect_content,
     render::{write_asset, write_pages_iter},
+    utils::find_files,
     Mode,
 };
 
@@ -56,10 +61,12 @@ fn css_watch_handler(paths: &Paths, path: &Path, tx: &Sender<crate::Event>) -> R
         "File(s) {:?} changed, rebuilding CSS",
         strip_prefix_paths(&paths.root, &path)?
     );
-    let css = Asset::build_css(paths, Mode::Dev)?;
-    write_asset(&paths.out, &css)?;
-    tx.send(crate::Event::Reload)?;
+    for file in find_files(&paths.css, is_buildable_css_file) {
+        let css = Asset::build_css(&file, Mode::Dev)?;
+        write_asset(&paths.out, &css)?;
+    }
 
+    tx.send(crate::Event::Reload)?;
     Ok(())
 }
 
@@ -77,7 +84,7 @@ fn content_watch_handler(
     let pages = collect_content(paths)?;
     write_pages_iter(
         &paths.out,
-        "styles.css",
+        &PathBuf::from("styles.css"),
         Mode::Dev,
         &url,
         &context.templates,

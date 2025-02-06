@@ -53,12 +53,15 @@ impl Renderer {
 }
 
 pub fn write_asset(dest: &Path, asset: &Asset) -> Result<()> {
-    write_file(&dest.join(&asset.filename), &asset.content)
+    write_file(
+        &dest.join(&asset.build_path.file_name().unwrap()),
+        &asset.content,
+    )
 }
 
 pub fn write_pages(dest: &Path, context: &Context) -> Result<()> {
     let css = context.assets.get("styles.css").unwrap();
-    let css = &css.filename;
+    let css = &css.build_path;
 
     write_pages_iter(
         dest,
@@ -72,7 +75,7 @@ pub fn write_pages(dest: &Path, context: &Context) -> Result<()> {
 
 pub fn write_pages_iter<'a, F>(
     dest: &Path,
-    css: &str,
+    css: &Path,
     mode: Mode,
     url: &Url,
     templates: &AutoReloader,

@@ -4,11 +4,11 @@ use ahash::AHashMap;
 use anyhow::Result;
 
 use crate::{
-    asset::{Asset, PublicFile},
+    asset::{is_buildable_css_file, Asset, PublicFile},
     constants::{Paths, LIVERELOAD_JS},
     content::{Content, Type},
     context::{Context, Metadata},
-    utils::{filename, find_files, is_file},
+    utils::{find_files, is_file},
     Mode,
 };
 
@@ -23,19 +23,24 @@ impl ContextBuilder {
         let pages = collect_content(paths)?;
 
         let mut assets = AHashMap::new();
-        assets.insert("styles.css".to_string(), Asset::build_css(paths, mode)?);
+
+        collect_css(paths, mode)?.into_iter().for_each(|a| {
+            assets.insert(a.source_name.clone(), a);
+        });
+        collect_js(paths)?.into_iter().for_each(|a| {
+            assets.insert(a.source_name.clone(), a);
+        });
+
         if mode.is_dev() {
             assets.insert(
                 "livereload.js".to_string(),
                 Asset {
-                    filename: filename(paths.out.join(Path::new("livereload.js"))),
+                    source_name: "livereload.js".to_string(),
+                    build_path: paths.out.join(Path::new("livereload.js")),
                     content: LIVERELOAD_JS.to_string(),
                 },
             );
         }
-        collect_js(paths)?.into_iter().for_each(|a| {
-            assets.insert(a.filename.clone(), a);
-        });
 
         let public_files = collect_public_files(paths);
         let pages: AHashMap<_, _> = pages.into_iter().map(|p| (p.filename(), p)).collect();
@@ -57,6 +62,12 @@ impl ContextBuilder {
             mode,
         )
     }
+}
+
+fn collect_css(paths: &Paths, mode: Mode) -> Result<Vec<Asset>> {
+    find_files(&paths.css, is_buildable_css_file)
+        .map(|f| Asset::build_css(&f, mode))
+        .collect()
 }
 
 fn collect_js(paths: &Paths) -> Result<Vec<Asset>> {

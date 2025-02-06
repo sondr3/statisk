@@ -8,6 +8,8 @@
     <title>{{ title|safe }} => Site</title>
     <meta content="{{ description|safe }}" name="description"/>
 
+    <link href="/{{ styles }}" rel="stylesheet"/>
+
     {% if is_dev %}
     <script src="/livereload.js"></script>
     {% endif %}

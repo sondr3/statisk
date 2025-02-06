@@ -60,7 +60,7 @@ impl Content {
 
     pub fn render(
         &self,
-        styles: &str,
+        styles: &Path,
         mode: Mode,
         url: &Url,
         templates: &AutoReloader,
@@ -121,7 +121,7 @@ impl Content {
         Ok(html)
     }
 
-    fn create(&self, styles: &str, mode: Mode, url: &Url) -> Result<Value> {
+    fn create(&self, styles: &Path, mode: Mode, url: &Url) -> Result<Value> {
         let content = self.content()?;
 
         Ok(context! {
@@ -132,7 +132,7 @@ impl Content {
             is_dev => mode.is_dev(),
             canonical_url => url.join(&self.url)?,
             content => content,
-            styles => styles,
+            styles => styles.file_name().map(|f| f.to_str().unwrap()),
         })
     }
 }
