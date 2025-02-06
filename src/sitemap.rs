@@ -113,12 +113,12 @@ pub fn create(urls: Vec<UrlEntry>) -> Result<String> {
 
     writer.write(doc)?;
 
-    let stylesheet = XmlEvent::start_element("xml-stylesheet")
-        .attr("type", "text/xsl")
-        .attr("href", "/sitemap-style.xsl");
+    let stylesheet = XmlEvent::processing_instruction(
+        "xml-stylesheet",
+        Some(r#"type="text/xsl" href="/sitemap.xsl"?"#),
+    );
 
     writer.write(stylesheet)?;
-    writer.write(XmlEvent::end_element())?;
 
     let url_set = XmlEvent::start_element("urlset")
         .attr("@xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9")
@@ -136,6 +136,8 @@ pub fn create(urls: Vec<UrlEntry>) -> Result<String> {
     for url in urls {
         url.to_xml(&mut writer)?;
     }
+
+    writer.write(XmlEvent::end_element())?;
 
     String::from_utf8(res).context("Sitemap failed to serialize")
 }
