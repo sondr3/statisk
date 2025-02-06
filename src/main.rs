@@ -135,14 +135,16 @@ async fn main() -> Result<()> {
     let context = ContextBuilder::new(&paths, mode)?.build(&paths, metadata, mode);
     let renderer = Renderer::new(&paths.out);
 
-    renderer.render_context(&context)?;
+    if matches!(opts.cmd, None | Some(Cmds::Dev | Cmds::Build)) {
+        renderer.render_context(&context)?;
 
-    let done = now.elapsed();
-    tracing::info!(
-        "Built {} pages in {:?}ms",
-        context.pages.len(),
-        done.as_millis()
-    );
+        let done = now.elapsed();
+        tracing::info!(
+            "Built {} pages in {:?}ms",
+            context.pages.len(),
+            done.as_millis()
+        );
+    }
 
     match opts.cmd {
         None | Some(Cmds::Dev) => {
