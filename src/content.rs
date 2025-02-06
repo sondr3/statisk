@@ -8,11 +8,12 @@ use minijinja_autoreload::AutoReloader;
 use serde::Deserialize;
 use url::Url;
 
-use crate::Mode;
+use crate::{utils::toml_date_option_deserializer, Mode};
 
 #[derive(Debug, Deserialize)]
 pub struct Frontmatter {
     pub title: String,
+    #[serde(with = "toml_date_option_deserializer", default)]
     pub last_modified: Option<Date>,
     pub subtitle: Option<String>,
     pub description: String,

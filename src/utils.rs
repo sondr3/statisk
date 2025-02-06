@@ -83,3 +83,40 @@ pub fn filename(path: impl Into<PathBuf>) -> String {
         |name| name.to_string_lossy().to_string(),
     )
 }
+
+pub mod toml_date_option_deserializer {
+    use jiff::civil::Date;
+    use serde::{self, Deserialize, Deserializer};
+    use toml::value::Datetime;
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Date>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = Datetime::deserialize(deserializer)?;
+        match s.date {
+            None => Ok(None),
+            Some(date) => Ok(Some(
+                Date::new(date.year as i16, date.month as i8, date.day as i8)
+                    .map_err(serde::de::Error::custom)?,
+            )),
+        }
+    }
+}
+
+pub mod toml_date_deserializer {
+    use super::toml_date_option_deserializer;
+    use jiff::civil::Date;
+    use serde::{self, Deserialize, Deserializer};
+    use toml::value::Datetime;
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        match toml_date_option_deserializer::deserialize(deserializer) {
+            Ok(None) | Err(_) => Err(serde::de::Error::custom("missing date")),
+            Ok(Some(date)) => Ok(date),
+        }
+    }
+}
