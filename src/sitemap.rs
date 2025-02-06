@@ -121,15 +121,9 @@ pub fn create(urls: Vec<UrlEntry>) -> Result<String> {
     writer.write(stylesheet)?;
 
     let url_set = XmlEvent::start_element("urlset")
-        .attr("@xmlns", "http://www.sitemaps.org/schemas/sitemap/0.9")
-        .attr(
-            "@xmlns:image",
-            "http://www.google.com/schemas/sitemap-image/1.1",
-        )
-        .attr(
-            "@xmlns:video",
-            "http://www.google.com/schemas/sitemap-video/1.1",
-        );
+        .ns("", "http://www.sitemaps.org/schemas/sitemap/0.9")
+        .ns("image", "http://www.google.com/schemas/sitemap-image/1.1")
+        .ns("video", "http://www.google.com/schemas/sitemap-video/1.1");
 
     writer.write(url_set)?;
 
