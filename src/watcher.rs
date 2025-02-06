@@ -59,7 +59,7 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate:
 fn css_watch_handler(paths: &Paths, path: &Path, tx: &Sender<crate::Event>) -> Result<()> {
     tracing::info!(
         "File(s) {:?} changed, rebuilding CSS",
-        strip_prefix_paths(&paths.root, &path)?
+        strip_prefix_paths(&paths.root, path)?
     );
     for file in find_files(&paths.css, is_buildable_css_file) {
         let css = Asset::build_css(&file, Mode::Dev)?;
@@ -78,7 +78,7 @@ fn content_watch_handler(
 ) -> Result<()> {
     tracing::info!(
         "File(s) {:?} changed, rebuilding site",
-        strip_prefix_paths(&paths.root, &path)?
+        strip_prefix_paths(&paths.root, path)?
     );
     let url = Url::parse("http://localhost:3000")?;
     let pages = collect_content(paths)?;

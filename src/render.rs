@@ -54,7 +54,7 @@ impl Renderer {
 
 pub fn write_asset(dest: &Path, asset: &Asset) -> Result<()> {
     write_file(
-        &dest.join(&asset.build_path.file_name().unwrap()),
+        &dest.join(asset.build_path.file_name().unwrap()),
         &asset.content,
     )
 }

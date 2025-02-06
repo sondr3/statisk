@@ -52,7 +52,7 @@ impl Asset {
         Ok(match mode {
             Mode::Build => Self {
                 source_name,
-                build_path: dbg!(digest_filename(&path, &css.code)),
+                build_path: dbg!(digest_filename(path, &css.code)),
                 content: minify::css(&css.code.clone())?,
             },
             Mode::Dev => Self {
