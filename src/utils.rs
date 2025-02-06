@@ -107,8 +107,7 @@ pub mod toml_date_option_deserializer {
 pub mod toml_date_deserializer {
     use super::toml_date_option_deserializer;
     use jiff::civil::Date;
-    use serde::{self, Deserialize, Deserializer};
-    use toml::value::Datetime;
+    use serde::{self, Deserializer};
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
     where

@@ -7,6 +7,7 @@ use lightningcss::{
 use swc_common::{BytePos, FileName, SourceFile};
 use swc_html_codegen::{writer::basic::BasicHtmlWriter, CodeGenerator, CodegenConfig, Emit};
 use swc_html_minifier::minify_document;
+use swc_html_minifier::option::{CollapseWhitespaces, MinifyJsOption, RemoveRedundantAttributes};
 use swc_html_parser::parse_file_as_document;
 
 pub fn html(content: String) -> Result<Vec<u8>> {
@@ -20,7 +21,28 @@ pub fn html(content: String) -> Result<Vec<u8>> {
     let mut errors = vec![];
     let mut document =
         parse_file_as_document(&source_file, Default::default(), &mut errors).unwrap();
-    minify_document(&mut document, &Default::default());
+
+    if !errors.is_empty() {
+        eprintln!("{:#?}", errors);
+    }
+    minify_document(
+        &mut document,
+        &swc_html_minifier::option::MinifyOptions {
+            force_set_html5_doctype: true,
+            collapse_whitespaces: CollapseWhitespaces::Smart,
+            remove_empty_metadata_elements: false,
+            remove_comments: true,
+            preserve_comments: None,
+            minify_conditional_comments: false,
+            remove_empty_attributes: true,
+            remove_redundant_attributes: RemoveRedundantAttributes::Smart,
+            collapse_boolean_attributes: true,
+            merge_metadata_elements: true,
+            normalize_attributes: true,
+            minify_js: MinifyJsOption::Bool(true),
+            ..Default::default()
+        },
+    );
     let mut minified_source = String::new();
     let mut code_generator = CodeGenerator::new(
         BasicHtmlWriter::new(&mut minified_source, None, Default::default()),

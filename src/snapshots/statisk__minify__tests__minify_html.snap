@@ -2,5 +2,4 @@
 source: src/minify.rs
 expression: minified
 ---
-<!doctype html><html lang=en><meta charset=utf-8><title>Test</title><h1>Hello</h1>
-    <p class=test>World
+<!doctype html><html lang=en><meta charset=utf-8><title>Test</title><h1>Hello</h1><p class=test>World
