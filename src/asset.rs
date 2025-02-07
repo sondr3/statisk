@@ -6,6 +6,7 @@ use lightningcss::{
     printer::PrinterOptions,
     stylesheet::ParserOptions,
 };
+use serde::Serialize;
 use walkdir::DirEntry;
 
 use crate::{
@@ -20,7 +21,7 @@ pub struct PublicFile {
     pub prefix: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct Asset {
     pub source_name: String,
     pub build_path: PathBuf,
@@ -52,7 +53,7 @@ impl Asset {
         Ok(match mode {
             Mode::Build => Self {
                 source_name,
-                build_path: dbg!(digest_filename(path, &css.code)),
+                build_path: digest_filename(path, &css.code),
                 content: minify::css(&css.code.clone())?,
             },
             Mode::Dev => Self {

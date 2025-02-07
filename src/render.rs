@@ -1,7 +1,6 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use minijinja_autoreload::AutoReloader;
 use url::Url;
 
 use crate::{
@@ -60,25 +59,20 @@ pub fn write_asset(dest: &Path, asset: &Asset) -> Result<()> {
 }
 
 pub fn write_pages(dest: &Path, context: &Context) -> Result<()> {
-    let css = context.assets.get("styles.css").unwrap();
-    let css = &css.build_path;
-
     write_pages_iter(
         dest,
-        css,
         context.mode,
         &context.metadata.url,
-        &context.templates,
+        &context,
         context.pages.values(),
     )
 }
 
 pub fn write_pages_iter<'a, F>(
     dest: &Path,
-    css: &Path,
     mode: Mode,
     url: &Url,
-    templates: &AutoReloader,
+    context: &Context,
     pages: F,
 ) -> Result<()>
 where
@@ -88,9 +82,9 @@ where
         write_file(
             &dest.join(&f.out_path),
             if mode.is_prod() {
-                minify::html(f.render(css, mode, url, templates)?)?
+                minify::html(f.render(mode, url, context)?)?
             } else {
-                f.render(css, mode, url, templates)?.into()
+                f.render(mode, url, context)?.into()
             },
         )
     })

@@ -1,7 +1,4 @@
-use std::{
-    path::{Path, PathBuf},
-    thread,
-};
+use std::{path::Path, thread};
 
 use ahash::HashSet;
 use anyhow::{Context, Result};
@@ -82,14 +79,7 @@ fn content_watch_handler(
     );
     let url = Url::parse("http://localhost:3000")?;
     let pages = collect_content(paths)?;
-    write_pages_iter(
-        &paths.out,
-        &PathBuf::from("styles.css"),
-        Mode::Dev,
-        &url,
-        &context.templates,
-        pages.iter(),
-    )?;
+    write_pages_iter(&paths.out, Mode::Dev, &url, &context, pages.iter())?;
     tx.send(crate::Event::Reload)?;
 
     Ok(())

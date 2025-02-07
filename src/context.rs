@@ -2,10 +2,12 @@ use std::path::PathBuf;
 
 use ahash::AHashMap;
 use anyhow::Result;
-use minijinja::{path_loader, Environment};
+use minijinja::{path_loader, Environment, State, Value};
 use minijinja_autoreload::AutoReloader;
+use minijinja_contrib::add_to_environment;
 use url::Url;
 
+use crate::utils::filename;
 use crate::{
     asset::{Asset, PublicFile},
     constants::{Paths, OUT_PATH},
@@ -40,6 +42,18 @@ pub struct Context {
     pub mode: Mode,
 }
 
+fn get_asset(state: &State, name: &str) -> Option<Value> {
+    let context = &state.lookup("assets")?;
+    let asset = context.get_attr(name).ok()?;
+    if asset.is_undefined() {
+        return None;
+    }
+
+    let path = asset.get_attr("build_path").ok()?;
+    let filename = filename(path.to_string());
+    Some(filename.into())
+}
+
 impl Context {
     pub fn new(
         paths: &Paths,
@@ -52,7 +66,9 @@ impl Context {
         let template_path = paths.templates.clone();
         let env = AutoReloader::new(move |notifier| {
             let mut env = Environment::new();
+            add_to_environment(&mut env);
             env.set_loader(path_loader(&template_path));
+            env.add_function("get_asset", get_asset);
 
             notifier.set_fast_reload(true);
 

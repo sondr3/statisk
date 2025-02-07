@@ -13,8 +13,9 @@ flate2 = "1.0.26"
 jiff = { version = "0.1.29", features = ["serde"] }
 jotdown = "0.3.0"
 lightningcss = { version = "1.0.0-alpha.63", default-features = false, features = ["browserslist", "bundler", "grid"] }
-minijinja = { version = "1.0.5", features = ["loader", "speedups"] }
-minijinja-autoreload = "1.0.5"
+minijinja = { version = "2.7.0", features = ["loader", "speedups", "preserve_order"] }
+minijinja-autoreload = "2.7.0"
+minijinja-contrib = { version = "2.7.0", features = ["datetime", "timezone", "rand", "wordcount", "wordwrap", "unicode_wordwrap"] }
 notify = "8.0.0"
 serde = { version = "1.0.176", features = ["derive"] }
 sha1_smol = { version = "1.0.0", features = ["std"] }
