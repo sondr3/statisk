@@ -5,7 +5,7 @@ use brotli::{enc::BrotliEncoderParams, CompressorWriter};
 use flate2::{write::GzEncoder, Compression};
 use walkdir::DirEntry;
 
-use crate::utils::{find_files, AppendExtension};
+use crate::utils::{append_extension, find_files};
 
 const VALID_EXTENSIONS: [&str; 15] = [
     "html", "css", "js", "xml", "css", "cjs", "mjs", "json", "txt", "svg", "map", "ttf", "otf",
@@ -15,13 +15,13 @@ const VALID_EXTENSIONS: [&str; 15] = [
 pub fn folder(folder: &Path) -> Result<()> {
     find_files(folder, compressible_files).try_for_each(|f| {
         let content = std::fs::read(&f)?;
-        let gzip = f.append_extension("gz");
+        let gzip = append_extension(&f, "gz");
 
         let mut gzip_encoder = GzEncoder::new(Vec::new(), Compression::best());
         gzip_encoder.write_all(&content)?;
         let gzipped = gzip_encoder.finish()?;
 
-        let brotli = f.append_extension("br");
+        let brotli = append_extension(&f, "br");
         let brotli_params = BrotliEncoderParams::default();
         let mut brotli_encoder = CompressorWriter::with_params(Vec::new(), 4096, &brotli_params);
         brotli_encoder.write_all(&content)?;

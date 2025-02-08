@@ -1,12 +1,13 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
+use anyhow::Result;
 use jiff::civil::Date;
 use jotdown::{Attributes, Container, Event, Render};
 use minijinja::{context, value::Value};
 use serde::Deserialize;
-use url::Url;
 
+use crate::templating::{create_base_context, TemplatePath};
+use crate::utils::unprefixed_parent;
 use crate::{context::Context as SContext, utils::toml_date_option_deserializer, BuildMode};
 
 #[derive(Debug, Deserialize)]
@@ -22,24 +23,18 @@ pub struct Frontmatter {
     pub special: bool,
 }
 
-#[derive(Debug, Copy, Clone)]
-pub enum Type {
-    Page,
-    Post,
-}
-
 #[derive(Debug)]
 pub struct Content {
     pub source: PathBuf,
     pub out_path: PathBuf,
+    pub dir: Option<String>,
     pub url: String,
-    pub content_type: Type,
     pub frontmatter: Frontmatter,
     pub content: String,
 }
 
 impl Content {
-    pub fn from_path(path: &Path, kind: Type) -> Result<Self> {
+    pub fn from_path(path: &Path, root: &Path) -> Result<Self> {
         let file = std::fs::read_to_string(path)?;
         let stem = path.file_stem().unwrap().to_string_lossy();
 
@@ -50,26 +45,24 @@ impl Content {
             .collect::<Vec<_>>()[..]
         {
             [frontmatter, content] => {
-                Content::from_file(path, &stem, kind, frontmatter, Some(content))
+                Content::from_file(path, root, &stem, frontmatter, Some(content))
             }
-            [frontmatter] => Content::from_file(path, &stem, kind, frontmatter, None),
+            [frontmatter] => Content::from_file(path, root, &stem, frontmatter, None),
             _ => todo!(),
         }
     }
 
-    pub fn render(&self, mode: BuildMode, url: &Url, context: &SContext) -> Result<String> {
-        let env = context.templates.acquire_env()?;
-        let template = env.get_template(&self.layout())?;
-        let context = self.create(&context, mode, url)?;
-        template
-            .render(context)
-            .context("Failed to render template")
+    pub fn render(&self, mode: BuildMode, context: &SContext) -> Result<String> {
+        let tmpl_context = self.context(context, mode)?;
+        context
+            .templates
+            .render_template(&self.layout(), tmpl_context)
     }
 
     fn from_file(
         source: &Path,
+        root: &Path,
         stem: &str,
-        kind: Type,
         frontmatter: &str,
         content: Option<&str>,
     ) -> Result<Self> {
@@ -81,12 +74,13 @@ impl Content {
         };
 
         let url = frontmatter.slug.as_ref().map_or(stem, |s| s);
+        let dir = unprefixed_parent(source, root);
 
         Ok(Content {
             source: source.to_path_buf(),
             url: format!("{url}/"),
             out_path: path,
-            content_type: kind,
+            dir,
             content: content.unwrap_or_default().into(),
             frontmatter,
         })
@@ -99,11 +93,10 @@ impl Content {
         )
     }
 
-    fn layout(&self) -> String {
-        match (self.content_type, &self.frontmatter.layout) {
-            (_, Some(layout)) => format!("{layout}.jinja"),
-            (Type::Page, None) => "page.jinja".to_string(),
-            (Type::Post, None) => "post.jinja".to_string(),
+    fn layout(&self) -> TemplatePath {
+        match &self.frontmatter.layout {
+            Some(layout) => TemplatePath(None, layout.to_string()),
+            None => TemplatePath(self.dir.clone(), "page".to_string()),
         }
     }
 
@@ -114,19 +107,19 @@ impl Content {
         Ok(html)
     }
 
-    fn create(&self, context: &SContext, mode: BuildMode, url: &Url) -> Result<Value> {
+    fn context(&self, context: &SContext, mode: BuildMode) -> Result<Value> {
+        let base_context = create_base_context(mode, context);
         let content = self.content()?;
 
         Ok(context! {
-            title => self.frontmatter.title.clone(),
-            subtitle => self.frontmatter.subtitle.clone(),
-            description => self.frontmatter.description.clone(),
-            mode => mode,
-            is_dev => mode.normal(),
-            canonical_url => url.join(&self.url)?,
-            content => content,
-            assets => context.assets,
-            config => context.config,
+            ..base_context,
+            ..context! {
+                title => self.frontmatter.title.clone(),
+                subtitle => self.frontmatter.subtitle.clone(),
+                description => self.frontmatter.description.clone(),
+                content => content,
+                canonical_url => context.config.url.join(&self.url)?,
+            }
         })
     }
 }

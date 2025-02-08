@@ -8,17 +8,19 @@ use anyhow::Result;
 use sha1_smol::Sha1;
 use walkdir::{DirEntry, WalkDir};
 
-pub trait AppendExtension {
-    fn append_extension(&self, ext: impl AsRef<OsStr>) -> PathBuf;
+pub fn append_extension(path: &Path, ext: impl AsRef<OsStr>) -> PathBuf {
+    let mut os_str: OsString = path.into();
+    os_str.push(".");
+    os_str.push(ext.as_ref());
+    os_str.into()
 }
 
-impl AppendExtension for PathBuf {
-    fn append_extension(&self, ext: impl AsRef<OsStr>) -> PathBuf {
-        let mut os_str: OsString = self.into();
-        os_str.push(".");
-        os_str.push(ext.as_ref());
-        os_str.into()
-    }
+pub fn unprefixed_parent(path: &Path, root: impl AsRef<Path>) -> Option<String> {
+    path.strip_prefix(root)
+        .ok()?
+        .parent()
+        .filter(|f| f.components().count() > 0)
+        .map(|f| f.to_owned().to_string_lossy().to_string())
 }
 
 pub fn is_file(entry: &DirEntry) -> bool {
@@ -70,9 +72,8 @@ pub fn digest_filename(filename: &Path, content: &str) -> PathBuf {
         panic!("No extension found for {filename:?}");
     };
 
-    PathBuf::from(filename)
-        .with_extension(hash)
-        .append_extension(extension)
+    let path = PathBuf::from(filename).with_extension(hash);
+    append_extension(&path, extension)
 }
 
 pub fn filename(path: impl Into<PathBuf>) -> String {

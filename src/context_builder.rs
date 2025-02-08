@@ -3,9 +3,10 @@ use std::path::Path;
 use ahash::AHashMap;
 use anyhow::Result;
 
+use crate::templating::Templates;
 use crate::{
     asset::{is_buildable_css_file, Asset, PublicFile},
-    content::{Content, Type},
+    content::Content,
     context::Context,
     paths::{Paths, LIVERELOAD_JS},
     statisk_config::StatiskConfig,
@@ -53,10 +54,10 @@ impl ContextBuilder {
         })
     }
 
-    pub fn build(self, paths: &Paths, metadata: StatiskConfig, mode: BuildMode) -> Context {
+    pub fn build(self, templates: Templates, config: StatiskConfig, mode: BuildMode) -> Context {
         Context::new(
-            paths,
-            metadata,
+            templates,
+            config,
             self.assets,
             self.pages,
             self.public_files,
@@ -79,7 +80,7 @@ fn collect_js(paths: &Paths) -> Result<Vec<Asset>> {
 
 pub fn collect_content(paths: &Paths) -> Result<Vec<Content>> {
     find_files(&paths.content, is_file)
-        .map(|f| Content::from_path(&f, Type::Page))
+        .map(|f| Content::from_path(&f, &paths.content))
         .collect()
 }
 

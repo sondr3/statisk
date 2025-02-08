@@ -1,8 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use url::Url;
 
+use crate::templating::create_base_context;
 use crate::{
     asset::{Asset, PublicFile},
     content::Content,
@@ -35,6 +35,7 @@ impl Renderer {
             .try_for_each(|a| write_asset(&self.dest, a))?;
 
         write_pages(&self.dest, context)?;
+        write_content(&self.dest, context)?;
         write_sitemap(&self.dest, context)?;
 
         Ok(())
@@ -59,19 +60,33 @@ pub fn write_asset(dest: &Path, asset: &Asset) -> Result<()> {
 }
 
 pub fn write_pages(dest: &Path, context: &Context) -> Result<()> {
-    write_pages_iter(
-        dest,
-        context.mode,
-        &context.config.url,
-        &context,
-        context.pages.values(),
-    )
+    for path in context.templates.pages.keys() {
+        let out_path = path.as_path_buf().with_extension("html");
+
+        let rendered = context
+            .templates
+            .render_template_page(path, create_base_context(context.mode, context))?;
+
+        write_file(
+            &dest.join(out_path),
+            if context.mode.optimize() {
+                minify::html(rendered)?
+            } else {
+                rendered.into()
+            },
+        )?;
+    }
+
+    Ok(())
 }
 
-pub fn write_pages_iter<'a, F>(
+pub fn write_content(dest: &Path, context: &Context) -> Result<()> {
+    write_content_iter(dest, context.mode, context, context.pages.values())
+}
+
+pub fn write_content_iter<'a, F>(
     dest: &Path,
     mode: BuildMode,
-    url: &Url,
     context: &Context,
     pages: F,
 ) -> Result<()>
@@ -82,9 +97,9 @@ where
         write_file(
             &dest.join(&f.out_path),
             if mode.optimize() {
-                minify::html(f.render(mode, url, context)?)?
+                minify::html(f.render(mode, context)?)?
             } else {
-                f.render(mode, url, context)?.into()
+                f.render(mode, context)?.into()
             },
         )
     })

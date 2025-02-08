@@ -10,6 +10,7 @@ mod render;
 mod server;
 mod sitemap;
 mod statisk_config;
+mod templating;
 mod utils;
 mod watcher;
 
@@ -23,6 +24,7 @@ use tracing_subscriber::{
     fmt::time::OffsetTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };
 
+use crate::templating::Templates;
 use crate::{
     build_mode::BuildMode, context_builder::ContextBuilder, paths::Paths, render::Renderer,
     statisk_config::StatiskConfig, watcher::start_live_reload,
@@ -109,7 +111,8 @@ async fn main() -> Result<()> {
 
     let now = Instant::now();
 
-    let context = ContextBuilder::new(&paths, mode)?.build(&paths, config, mode);
+    let templates = Templates::new(paths.templates.clone())?;
+    let context = ContextBuilder::new(&paths, mode)?.build(templates, config, mode);
     let renderer = Renderer::new(&paths.out);
 
     if matches!(opts.cmd, None | Some(Cmds::Dev | Cmds::Build)) {
