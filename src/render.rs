@@ -2,7 +2,6 @@ use std::path::{Path, PathBuf};
 
 use anyhow::Result;
 
-use crate::templating::create_base_context;
 use crate::{
     asset::{Asset, PublicFile},
     content::Content,
@@ -10,6 +9,7 @@ use crate::{
     minify::{self},
     sitemap,
     sitemap::UrlEntry,
+    templating::create_base_context,
     utils::{copy_file, write_file},
     BuildMode,
 };

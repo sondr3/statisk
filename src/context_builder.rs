@@ -3,13 +3,13 @@ use std::path::Path;
 use ahash::AHashMap;
 use anyhow::Result;
 
-use crate::templating::Templates;
 use crate::{
     asset::{is_buildable_css_file, Asset, PublicFile},
     content::Content,
     context::Context,
     paths::{Paths, LIVERELOAD_JS},
     statisk_config::StatiskConfig,
+    templating::Templates,
     utils::{find_files, is_file},
     BuildMode,
 };

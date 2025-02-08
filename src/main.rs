@@ -24,10 +24,9 @@ use tracing_subscriber::{
     fmt::time::OffsetTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };
 
-use crate::templating::Templates;
 use crate::{
     build_mode::BuildMode, context_builder::ContextBuilder, paths::Paths, render::Renderer,
-    statisk_config::StatiskConfig, watcher::start_live_reload,
+    statisk_config::StatiskConfig, templating::Templates, watcher::start_live_reload,
 };
 
 #[derive(Debug, Parser)]

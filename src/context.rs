@@ -1,10 +1,10 @@
 use ahash::AHashMap;
 
-use crate::templating::Templates;
 use crate::{
     asset::{Asset, PublicFile},
     content::Content,
     statisk_config::StatiskConfig,
+    templating::Templates,
     BuildMode,
 };
 

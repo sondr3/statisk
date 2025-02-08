@@ -1,8 +1,8 @@
-use crate::build_mode::BuildMode;
-use crate::context::Context as SContext;
-use crate::utils::split_frontmatter;
-use crate::utils::toml_date_jiff_serde;
-use crate::utils::{filename, find_files, is_file, unprefixed_parent};
+use std::{
+    fs::read_to_string,
+    path::{Path, PathBuf},
+};
+
 use ahash::AHashMap;
 use anyhow::{anyhow, bail, Context, Result};
 use jiff::civil::Date;
@@ -10,8 +10,14 @@ use minijinja::{context, path_loader, Environment, State, Value};
 use minijinja_autoreload::AutoReloader;
 use minijinja_contrib::add_to_environment;
 use serde::{Deserialize, Serialize};
-use std::fs::read_to_string;
-use std::path::{Path, PathBuf};
+
+use crate::{
+    build_mode::BuildMode,
+    context::Context as SContext,
+    utils::{
+        filename, find_files, is_file, split_frontmatter, toml_date_jiff_serde, unprefixed_parent,
+    },
+};
 
 pub fn is_page(path: &Path) -> bool {
     !is_template(path) && !is_partial(path)
@@ -206,8 +212,9 @@ impl Templates {
 
 #[cfg(test)]
 mod tests {
-    use crate::templating::{is_page, is_template};
     use std::path::PathBuf;
+
+    use crate::templating::{is_page, is_template};
 
     #[test]
     fn test_is_page() {

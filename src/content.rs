@@ -6,9 +6,12 @@ use jotdown::{Attributes, Container, Event, Render};
 use minijinja::{context, value::Value};
 use serde::Deserialize;
 
-use crate::templating::{create_base_context, TemplatePath};
-use crate::utils::{split_frontmatter, unprefixed_parent};
-use crate::{context::Context as SContext, utils::toml_date_jiff_serde, BuildMode};
+use crate::{
+    context::Context as SContext,
+    templating::{create_base_context, TemplatePath},
+    utils::{split_frontmatter, toml_date_jiff_serde, unprefixed_parent},
+    BuildMode,
+};
 
 #[derive(Debug, Deserialize)]
 pub struct Frontmatter {

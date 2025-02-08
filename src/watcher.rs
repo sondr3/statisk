@@ -7,13 +7,13 @@ use notify::{
 };
 use tokio::sync::broadcast::Sender;
 
-use crate::templating::{is_page, is_partial, is_template};
 use crate::{
     asset::{is_buildable_css_file, Asset},
     context::Context as AppContext,
     context_builder::collect_content,
     paths::Paths,
     render::{write_asset, write_content_iter},
+    templating::{is_page, is_partial, is_template},
     utils::find_files,
     BuildMode,
 };
