@@ -9,7 +9,7 @@ use crate::{
     content::{Content, Type},
     context::{Context, Metadata},
     utils::{find_files, is_file},
-    Mode,
+    BuildMode,
 };
 
 pub struct ContextBuilder {
@@ -19,7 +19,7 @@ pub struct ContextBuilder {
 }
 
 impl ContextBuilder {
-    pub fn new(paths: &Paths, mode: Mode) -> Result<Self> {
+    pub fn new(paths: &Paths, mode: BuildMode) -> Result<Self> {
         let pages = collect_content(paths)?;
 
         let mut assets = AHashMap::new();
@@ -31,7 +31,7 @@ impl ContextBuilder {
             assets.insert(a.source_name.clone(), a);
         });
 
-        if mode.is_dev() {
+        if mode.normal() {
             assets.insert(
                 "livereload.js".to_string(),
                 Asset {
@@ -52,7 +52,7 @@ impl ContextBuilder {
         })
     }
 
-    pub fn build(self, paths: &Paths, metadata: Metadata, mode: Mode) -> Context {
+    pub fn build(self, paths: &Paths, metadata: Metadata, mode: BuildMode) -> Context {
         Context::new(
             paths,
             metadata,
@@ -64,7 +64,7 @@ impl ContextBuilder {
     }
 }
 
-fn collect_css(paths: &Paths, mode: Mode) -> Result<Vec<Asset>> {
+fn collect_css(paths: &Paths, mode: BuildMode) -> Result<Vec<Asset>> {
     find_files(&paths.css, is_buildable_css_file)
         .map(|f| Asset::build_css(&f, mode))
         .collect()

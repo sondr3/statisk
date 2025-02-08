@@ -12,7 +12,7 @@ use crate::{
     asset::{Asset, PublicFile},
     constants::{Paths, OUT_PATH},
     content::Content,
-    Mode,
+    BuildMode,
 };
 
 #[derive(Debug)]
@@ -22,11 +22,11 @@ pub struct Metadata {
 }
 
 impl Metadata {
-    pub fn new(mode: Mode) -> Result<Self> {
+    pub fn new(mode: BuildMode) -> Result<Self> {
         Ok(Self {
             url: match mode {
-                Mode::Build => Url::parse("https://www.eons.io")?,
-                Mode::Dev => Url::parse("http://localhost:3000")?,
+                BuildMode::Optimized => Url::parse("https://www.eons.io")?,
+                BuildMode::Normal => Url::parse("http://localhost:3000")?,
             },
             out: PathBuf::from(OUT_PATH),
         })
@@ -39,7 +39,7 @@ pub struct Context {
     pub pages: AHashMap<String, Content>,
     pub templates: AutoReloader,
     pub public_files: Vec<PublicFile>,
-    pub mode: Mode,
+    pub mode: BuildMode,
 }
 
 fn get_asset(state: &State, name: &str) -> Option<Value> {
@@ -61,7 +61,7 @@ impl Context {
         assets: AHashMap<String, Asset>,
         pages: AHashMap<String, Content>,
         public_files: Vec<PublicFile>,
-        mode: Mode,
+        mode: BuildMode,
     ) -> Self {
         let template_path = paths.templates.clone();
         let env = AutoReloader::new(move |notifier| {

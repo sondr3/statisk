@@ -9,7 +9,7 @@ use url::Url;
 
 use crate::asset::Asset;
 use crate::context::Context as SContext;
-use crate::{utils::toml_date_option_deserializer, Mode};
+use crate::{utils::toml_date_option_deserializer, BuildMode};
 
 #[derive(Debug, Deserialize)]
 pub struct Frontmatter {
@@ -59,7 +59,7 @@ impl Content {
         }
     }
 
-    pub fn render(&self, mode: Mode, url: &Url, context: &SContext) -> Result<String> {
+    pub fn render(&self, mode: BuildMode, url: &Url, context: &SContext) -> Result<String> {
         let env = context.templates.acquire_env()?;
         let template = env.get_template(&self.layout())?;
         let context = self.create(&context.assets, mode, url)?;
@@ -116,7 +116,12 @@ impl Content {
         Ok(html)
     }
 
-    fn create(&self, assets: &AHashMap<String, Asset>, mode: Mode, url: &Url) -> Result<Value> {
+    fn create(
+        &self,
+        assets: &AHashMap<String, Asset>,
+        mode: BuildMode,
+        url: &Url,
+    ) -> Result<Value> {
         let content = self.content()?;
 
         Ok(context! {
@@ -124,7 +129,7 @@ impl Content {
             subtitle => self.frontmatter.subtitle.clone(),
             description => self.frontmatter.description.clone(),
             mode => mode,
-            is_dev => mode.is_dev(),
+            is_dev => mode.normal(),
             canonical_url => url.join(&self.url)?,
             content => content,
             assets => assets,

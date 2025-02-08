@@ -15,7 +15,7 @@ use crate::{
     context_builder::collect_content,
     render::{write_asset, write_pages_iter},
     utils::find_files,
-    Mode,
+    BuildMode,
 };
 
 pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate::Event>) {
@@ -59,7 +59,7 @@ fn css_watch_handler(paths: &Paths, path: &Path, tx: &Sender<crate::Event>) -> R
         strip_prefix_paths(&paths.root, path)?
     );
     for file in find_files(&paths.css, is_buildable_css_file) {
-        let css = Asset::build_css(&file, Mode::Dev)?;
+        let css = Asset::build_css(&file, BuildMode::Normal)?;
         write_asset(&paths.out, &css)?;
     }
 
@@ -79,7 +79,7 @@ fn content_watch_handler(
     );
     let url = Url::parse("http://localhost:3000")?;
     let pages = collect_content(paths)?;
-    write_pages_iter(&paths.out, Mode::Dev, &url, &context, pages.iter())?;
+    write_pages_iter(&paths.out, BuildMode::Normal, &url, &context, pages.iter())?;
     tx.send(crate::Event::Reload)?;
 
     Ok(())

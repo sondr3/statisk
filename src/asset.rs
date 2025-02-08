@@ -9,10 +9,10 @@ use lightningcss::{
 use serde::Serialize;
 use walkdir::DirEntry;
 
+use crate::build_mode::BuildMode;
 use crate::{
     minify,
     utils::{digest_filename, filename},
-    Mode,
 };
 
 #[derive(Debug)]
@@ -40,7 +40,7 @@ impl Asset {
         })
     }
 
-    pub fn build_css(path: &Path, mode: Mode) -> Result<Self> {
+    pub fn build_css(path: &Path, mode: BuildMode) -> Result<Self> {
         let fs = Box::leak(Box::new(FileProvider::new()));
         let mut bundler = Bundler::new(fs, None, ParserOptions::default());
         let stylesheet = bundler.bundle(path)?;
@@ -51,12 +51,12 @@ impl Asset {
             .unwrap();
 
         Ok(match mode {
-            Mode::Build => Self {
+            BuildMode::Optimized => Self {
                 source_name,
                 build_path: digest_filename(path, &css.code),
                 content: minify::css(&css.code.clone())?,
             },
-            Mode::Dev => Self {
+            BuildMode::Normal => Self {
                 source_name,
                 build_path: path.to_owned(),
                 content: css.code,

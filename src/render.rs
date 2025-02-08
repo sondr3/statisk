@@ -11,7 +11,7 @@ use crate::{
     sitemap,
     sitemap::UrlEntry,
     utils::{copy_file, write_file},
-    Mode,
+    BuildMode,
 };
 
 pub struct Renderer {
@@ -70,7 +70,7 @@ pub fn write_pages(dest: &Path, context: &Context) -> Result<()> {
 
 pub fn write_pages_iter<'a, F>(
     dest: &Path,
-    mode: Mode,
+    mode: BuildMode,
     url: &Url,
     context: &Context,
     pages: F,
@@ -81,7 +81,7 @@ where
     pages.into_iter().try_for_each(|f| {
         write_file(
             &dest.join(&f.out_path),
-            if mode.is_prod() {
+            if mode.optimize() {
                 minify::html(f.render(mode, url, context)?)?
             } else {
                 f.render(mode, url, context)?.into()

@@ -1,4 +1,5 @@
 mod asset;
+mod build_mode;
 mod compress;
 mod config;
 mod constants;
@@ -12,48 +13,21 @@ mod sitemap;
 mod utils;
 mod watcher;
 
-use std::{env::current_dir, fmt::Display, path::PathBuf, thread, time::Instant};
+use std::{env::current_dir, path::PathBuf, thread, time::Instant};
 
 use anyhow::{bail, Result};
-use clap::{Parser, Subcommand, ValueEnum, ValueHint};
-use serde::Serialize;
+use clap::{Parser, Subcommand, ValueHint};
 use time::UtcOffset;
 use tokio::sync::broadcast;
 use tracing_subscriber::{
     fmt::time::OffsetTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };
 
+use crate::build_mode::BuildMode;
 use crate::{
     config::Config, constants::Paths, context::Metadata, context_builder::ContextBuilder,
     render::Renderer, watcher::start_live_reload,
 };
-
-#[derive(Debug, Copy, Clone, ValueEnum, Serialize)]
-pub enum Mode {
-    Build,
-    Dev,
-}
-
-impl Display for Mode {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Mode::Build => write!(f, "build"),
-            Mode::Dev => write!(f, "dev"),
-        }
-    }
-}
-
-impl Mode {
-    #[must_use]
-    pub const fn is_prod(&self) -> bool {
-        matches!(self, Self::Build)
-    }
-
-    #[must_use]
-    pub const fn is_dev(&self) -> bool {
-        matches!(self, Self::Dev)
-    }
-}
 
 #[derive(Debug, Parser)]
 #[command(version, about, author)]
@@ -125,8 +99,8 @@ async fn main() -> Result<()> {
     }
 
     let mode = match opts.cmd {
-        None | Some(Cmds::Dev) => Mode::Dev,
-        Some(Cmds::Build) | Some(Cmds::Serve) => Mode::Build,
+        None | Some(Cmds::Dev) => BuildMode::Normal,
+        Some(Cmds::Build) | Some(Cmds::Serve) => BuildMode::Optimized,
     };
 
     let now = Instant::now();
