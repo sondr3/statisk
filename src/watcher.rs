@@ -6,13 +6,12 @@ use notify::{
     event::ModifyKind, Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher,
 };
 use tokio::sync::broadcast::Sender;
-use url::Url;
 
 use crate::{
     asset::{is_buildable_css_file, Asset},
-    constants::Paths,
     context::Context as AppContext,
     context_builder::collect_content,
+    paths::Paths,
     render::{write_asset, write_pages_iter},
     utils::find_files,
     BuildMode,
@@ -77,9 +76,14 @@ fn content_watch_handler(
         "File(s) {:?} changed, rebuilding site",
         strip_prefix_paths(&paths.root, path)?
     );
-    let url = Url::parse("http://localhost:3000")?;
     let pages = collect_content(paths)?;
-    write_pages_iter(&paths.out, BuildMode::Normal, &url, &context, pages.iter())?;
+    write_pages_iter(
+        &paths.out,
+        BuildMode::Normal,
+        &context.config.url,
+        &context,
+        pages.iter(),
+    )?;
     tx.send(crate::Event::Reload)?;
 
     Ok(())

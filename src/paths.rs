@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
-pub const OUT_PATH: &str = "_dist";
-pub const TEMPLATE_PATH: &str = "templates";
-pub const PUBLIC_PATH: &str = "public";
-pub const CSS_PATH: &str = "css";
-pub const JS_PATH: &str = "js";
-pub const CONTENT_PATH: &str = "content";
+const OUT_PATH: &str = "_dist";
+const TEMPLATE_PATH: &str = "templates";
+const PUBLIC_PATH: &str = "public";
+const CSS_PATH: &str = "css";
+const JS_PATH: &str = "js";
+const CONTENT_PATH: &str = "content";
 
 pub const LIVERELOAD_JS: &str = include_str!("livereload.js");
 

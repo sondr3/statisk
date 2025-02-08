@@ -9,8 +9,8 @@ use lightningcss::{
 use serde::Serialize;
 use walkdir::DirEntry;
 
-use crate::build_mode::BuildMode;
 use crate::{
+    build_mode::BuildMode,
     minify,
     utils::{digest_filename, filename},
 };

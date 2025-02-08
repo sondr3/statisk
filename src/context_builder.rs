@@ -5,9 +5,10 @@ use anyhow::Result;
 
 use crate::{
     asset::{is_buildable_css_file, Asset, PublicFile},
-    constants::{Paths, LIVERELOAD_JS},
     content::{Content, Type},
-    context::{Context, Metadata},
+    context::Context,
+    paths::{Paths, LIVERELOAD_JS},
+    statisk_config::StatiskConfig,
     utils::{find_files, is_file},
     BuildMode,
 };
@@ -52,7 +53,7 @@ impl ContextBuilder {
         })
     }
 
-    pub fn build(self, paths: &Paths, metadata: Metadata, mode: BuildMode) -> Context {
+    pub fn build(self, paths: &Paths, metadata: StatiskConfig, mode: BuildMode) -> Context {
         Context::new(
             paths,
             metadata,

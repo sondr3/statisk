@@ -1,15 +1,13 @@
-use ahash::AHashMap;
+use std::path::{Path, PathBuf};
+
 use anyhow::{Context, Result};
 use jiff::civil::Date;
 use jotdown::{Attributes, Container, Event, Render};
 use minijinja::{context, value::Value};
 use serde::Deserialize;
-use std::path::{Path, PathBuf};
 use url::Url;
 
-use crate::asset::Asset;
-use crate::context::Context as SContext;
-use crate::{utils::toml_date_option_deserializer, BuildMode};
+use crate::{context::Context as SContext, utils::toml_date_option_deserializer, BuildMode};
 
 #[derive(Debug, Deserialize)]
 pub struct Frontmatter {
@@ -62,7 +60,7 @@ impl Content {
     pub fn render(&self, mode: BuildMode, url: &Url, context: &SContext) -> Result<String> {
         let env = context.templates.acquire_env()?;
         let template = env.get_template(&self.layout())?;
-        let context = self.create(&context.assets, mode, url)?;
+        let context = self.create(&context, mode, url)?;
         template
             .render(context)
             .context("Failed to render template")
@@ -116,12 +114,7 @@ impl Content {
         Ok(html)
     }
 
-    fn create(
-        &self,
-        assets: &AHashMap<String, Asset>,
-        mode: BuildMode,
-        url: &Url,
-    ) -> Result<Value> {
+    fn create(&self, context: &SContext, mode: BuildMode, url: &Url) -> Result<Value> {
         let content = self.content()?;
 
         Ok(context! {
@@ -132,7 +125,8 @@ impl Content {
             is_dev => mode.normal(),
             canonical_url => url.join(&self.url)?,
             content => content,
-            assets => assets,
+            assets => context.assets,
+            config => context.config,
         })
     }
 }

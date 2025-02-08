@@ -62,7 +62,7 @@ pub fn write_pages(dest: &Path, context: &Context) -> Result<()> {
     write_pages_iter(
         dest,
         context.mode,
-        &context.metadata.url,
+        &context.config.url,
         &context,
         context.pages.values(),
     )
@@ -95,7 +95,7 @@ pub fn write_sitemap(dest: &Path, context: &Context) -> Result<()> {
         .pages
         .values()
         .filter(|p| !p.frontmatter.special)
-        .map(|e| UrlEntry::from_content(e, &context.metadata.url))
+        .map(|e| UrlEntry::from_content(e, &context.config.url))
         .collect::<Result<Vec<_>>>()?;
 
     let sitemap = sitemap::create(urls)?;

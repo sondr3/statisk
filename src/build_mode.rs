@@ -1,6 +1,7 @@
+use std::fmt::Display;
+
 use clap::ValueEnum;
 use serde::Serialize;
-use std::fmt::Display;
 
 #[derive(Debug, Copy, Clone, ValueEnum, Serialize)]
 pub enum BuildMode {

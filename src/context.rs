@@ -1,40 +1,19 @@
-use std::path::PathBuf;
-
 use ahash::AHashMap;
-use anyhow::Result;
 use minijinja::{path_loader, Environment, State, Value};
 use minijinja_autoreload::AutoReloader;
 use minijinja_contrib::add_to_environment;
-use url::Url;
 
-use crate::utils::filename;
 use crate::{
     asset::{Asset, PublicFile},
-    constants::{Paths, OUT_PATH},
     content::Content,
+    paths::Paths,
+    statisk_config::StatiskConfig,
+    utils::filename,
     BuildMode,
 };
 
-#[derive(Debug)]
-pub struct Metadata {
-    pub url: Url,
-    pub out: PathBuf,
-}
-
-impl Metadata {
-    pub fn new(mode: BuildMode) -> Result<Self> {
-        Ok(Self {
-            url: match mode {
-                BuildMode::Optimized => Url::parse("https://www.eons.io")?,
-                BuildMode::Normal => Url::parse("http://localhost:3000")?,
-            },
-            out: PathBuf::from(OUT_PATH),
-        })
-    }
-}
-
 pub struct Context {
-    pub metadata: Metadata,
+    pub config: StatiskConfig,
     pub assets: AHashMap<String, Asset>,
     pub pages: AHashMap<String, Content>,
     pub templates: AutoReloader,
@@ -57,7 +36,7 @@ fn get_asset(state: &State, name: &str) -> Option<Value> {
 impl Context {
     pub fn new(
         paths: &Paths,
-        metadata: Metadata,
+        config: StatiskConfig,
         assets: AHashMap<String, Asset>,
         pages: AHashMap<String, Content>,
         public_files: Vec<PublicFile>,
@@ -77,7 +56,7 @@ impl Context {
         });
 
         Self {
-            metadata,
+            config,
             assets,
             pages,
             templates: env,

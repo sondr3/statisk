@@ -1,15 +1,15 @@
 mod asset;
 mod build_mode;
 mod compress;
-mod config;
-mod constants;
 mod content;
 mod context;
 mod context_builder;
 mod minify;
+mod paths;
 mod render;
 mod server;
 mod sitemap;
+mod statisk_config;
 mod utils;
 mod watcher;
 
@@ -23,10 +23,9 @@ use tracing_subscriber::{
     fmt::time::OffsetTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };
 
-use crate::build_mode::BuildMode;
 use crate::{
-    config::Config, constants::Paths, context::Metadata, context_builder::ContextBuilder,
-    render::Renderer, watcher::start_live_reload,
+    build_mode::BuildMode, context_builder::ContextBuilder, paths::Paths, render::Renderer,
+    statisk_config::StatiskConfig, watcher::start_live_reload,
 };
 
 #[derive(Debug, Parser)]
@@ -80,10 +79,15 @@ async fn main() -> Result<()> {
         Some(dir) => dir.canonicalize()?,
     };
 
+    let mode = match opts.cmd {
+        None | Some(Cmds::Dev) => BuildMode::Normal,
+        Some(Cmds::Build) | Some(Cmds::Serve) => BuildMode::Optimized,
+    };
+
     let paths = Paths::new(root);
-    let _config = match Config::from_path(&paths.root.join("statisk.toml")) {
+    let config = match StatiskConfig::from_path(&paths.root.join("statisk.toml"), mode) {
         Ok(config) => config,
-        Err(_) => bail!("could not find a `statisk.toml` file"),
+        Err(err) => bail!("could not read config: {:?}", err),
     };
 
     match opts.cmd {
@@ -98,15 +102,9 @@ async fn main() -> Result<()> {
         }
     }
 
-    let mode = match opts.cmd {
-        None | Some(Cmds::Dev) => BuildMode::Normal,
-        Some(Cmds::Build) | Some(Cmds::Serve) => BuildMode::Optimized,
-    };
-
     let now = Instant::now();
 
-    let metadata = Metadata::new(mode)?;
-    let context = ContextBuilder::new(&paths, mode)?.build(&paths, metadata, mode);
+    let context = ContextBuilder::new(&paths, mode)?.build(&paths, config, mode);
     let renderer = Renderer::new(&paths.out);
 
     if matches!(opts.cmd, None | Some(Cmds::Dev | Cmds::Build)) {
