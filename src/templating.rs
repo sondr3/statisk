@@ -1,11 +1,15 @@
 use crate::build_mode::BuildMode;
 use crate::context::Context as SContext;
+use crate::utils::split_frontmatter;
+use crate::utils::toml_date_jiff_serde;
 use crate::utils::{filename, find_files, is_file, unprefixed_parent};
 use ahash::AHashMap;
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
+use jiff::civil::Date;
 use minijinja::{context, path_loader, Environment, State, Value};
 use minijinja_autoreload::AutoReloader;
 use minijinja_contrib::add_to_environment;
+use serde::{Deserialize, Serialize};
 use std::fs::read_to_string;
 use std::path::{Path, PathBuf};
 
@@ -42,9 +46,43 @@ pub struct Template {
     pub content: String,
 }
 
+#[derive(Debug, Deserialize, Serialize)]
+pub struct PageFrontmatter {
+    pub title: String,
+    pub subtitle: Option<String>,
+    pub description: String,
+    pub slug: Option<String>,
+    pub layout: Option<String>,
+    #[serde(with = "toml_date_jiff_serde", default)]
+    pub last_modified: Option<Date>,
+    #[serde(with = "toml_date_jiff_serde", default)]
+    pub created: Option<Date>,
+}
+
 #[derive(Debug)]
 pub struct TemplatePage {
+    pub frontmatter: Option<PageFrontmatter>,
     pub content: String,
+}
+
+impl TemplatePage {
+    pub fn new(content: String) -> Result<Self> {
+        match split_frontmatter(content) {
+            Some((Some(frontmatter), content)) => {
+                let frontmatter =
+                    toml::from_str(&frontmatter).context("Could not parse frontmatter")?;
+                Ok(TemplatePage {
+                    frontmatter: Some(frontmatter),
+                    content,
+                })
+            }
+            Some((None, content)) => Ok(TemplatePage {
+                frontmatter: None,
+                content,
+            }),
+            None => bail!("No content or frontmatter found for page"),
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Hash)]
@@ -117,8 +155,8 @@ impl Templates {
         let content = read_to_string(&path).context("could not read file")?;
         let tmpl_path = TemplatePath(dir, name);
         if is_page(&path) {
-            let template = TemplatePage { content };
-            self.pages.insert(tmpl_path, template);
+            let page = TemplatePage::new(content)?;
+            self.pages.insert(tmpl_path, page);
         } else if is_template(&path) {
             let template = Template { content };
             self.templates.insert(tmpl_path, template);
@@ -143,6 +181,22 @@ impl Templates {
             .pages
             .get(path)
             .ok_or(anyhow!("Could not find template"))?;
+
+        let page_context = match &template.frontmatter {
+            Some(frontmatter) => {
+                context! {
+                    title => frontmatter.title.clone(),
+                    subtitle => frontmatter.subtitle.clone(),
+                    description => frontmatter.description.clone(),
+                }
+            }
+            None => context! {},
+        };
+
+        let context = context! {
+            ..context,
+            ..page_context
+        };
 
         let env = self.environment.acquire_env()?;
         let template = env.template_from_str(&template.content)?;

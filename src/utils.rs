@@ -23,6 +23,19 @@ pub fn unprefixed_parent(path: &Path, root: impl AsRef<Path>) -> Option<String> 
         .map(|f| f.to_owned().to_string_lossy().to_string())
 }
 
+pub fn split_frontmatter(content: String) -> Option<(Option<String>, String)> {
+    match content
+        .split("+++")
+        .map(str::trim)
+        .filter(|e| !e.is_empty())
+        .collect::<Vec<_>>()[..]
+    {
+        [frontmatter, content] => Some((Some(frontmatter.to_string()), content.to_string())),
+        [content] => Some((None, content.to_string())),
+        _ => None,
+    }
+}
+
 pub fn is_file(entry: &DirEntry) -> bool {
     entry.file_type().is_file()
 }
@@ -83,9 +96,9 @@ pub fn filename(path: impl Into<PathBuf>) -> String {
     )
 }
 
-pub mod toml_date_option_deserializer {
+pub mod toml_date_jiff_serde {
     use jiff::civil::Date;
-    use serde::{self, Deserialize, Deserializer};
+    use serde::{self, Deserialize, Deserializer, Serializer};
     use toml::value::Datetime;
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Date>, D::Error>
@@ -101,19 +114,29 @@ pub mod toml_date_option_deserializer {
             )),
         }
     }
+
+    pub fn serialize<S>(date: &Option<Date>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match date {
+            None => serializer.serialize_none(),
+            Some(date) => serializer.serialize_str(&date.to_string()),
+        }
+    }
 }
 
 pub mod toml_date_deserializer {
     use jiff::civil::Date;
     use serde::{self, Deserializer};
 
-    use super::toml_date_option_deserializer;
+    use super::toml_date_jiff_serde;
 
     pub fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
     where
         D: Deserializer<'de>,
     {
-        match toml_date_option_deserializer::deserialize(deserializer) {
+        match toml_date_jiff_serde::deserialize(deserializer) {
             Ok(None) | Err(_) => Err(serde::de::Error::custom("missing date")),
             Ok(Some(date)) => Ok(date),
         }

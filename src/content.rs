@@ -1,26 +1,24 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{anyhow, bail, Result};
 use jiff::civil::Date;
 use jotdown::{Attributes, Container, Event, Render};
 use minijinja::{context, value::Value};
 use serde::Deserialize;
 
 use crate::templating::{create_base_context, TemplatePath};
-use crate::utils::unprefixed_parent;
-use crate::{context::Context as SContext, utils::toml_date_option_deserializer, BuildMode};
+use crate::utils::{split_frontmatter, unprefixed_parent};
+use crate::{context::Context as SContext, utils::toml_date_jiff_serde, BuildMode};
 
 #[derive(Debug, Deserialize)]
 pub struct Frontmatter {
     pub title: String,
-    #[serde(with = "toml_date_option_deserializer", default)]
+    #[serde(with = "toml_date_jiff_serde", default)]
     pub last_modified: Option<Date>,
     pub subtitle: Option<String>,
     pub description: String,
     pub slug: Option<String>,
     pub layout: Option<String>,
-    #[serde(default)]
-    pub special: bool,
 }
 
 #[derive(Debug)]
@@ -38,17 +36,12 @@ impl Content {
         let file = std::fs::read_to_string(path)?;
         let stem = path.file_stem().unwrap().to_string_lossy();
 
-        match file
-            .split("+++")
-            .map(str::trim)
-            .filter(|e| !e.is_empty())
-            .collect::<Vec<_>>()[..]
-        {
-            [frontmatter, content] => {
-                Content::from_file(path, root, &stem, frontmatter, Some(content))
-            }
-            [frontmatter] => Content::from_file(path, root, &stem, frontmatter, None),
-            _ => todo!(),
+        let (frontmatter, content) =
+            split_frontmatter(file).ok_or(anyhow!("Could not find content or frontmatter"))?;
+
+        match frontmatter {
+            Some(frontmatter) => Content::from_file(path, root, &stem, frontmatter, content),
+            None => bail!("Missing frontmatter in content"),
         }
     }
 
@@ -63,10 +56,10 @@ impl Content {
         source: &Path,
         root: &Path,
         stem: &str,
-        frontmatter: &str,
-        content: Option<&str>,
+        frontmatter: String,
+        content: String,
     ) -> Result<Self> {
-        let frontmatter: Frontmatter = toml::from_str(frontmatter)?;
+        let frontmatter: Frontmatter = toml::from_str(&frontmatter)?;
 
         let path: PathBuf = match &frontmatter.slug {
             Some(slug) => [slug, "index.html"].into_iter().collect(),
@@ -81,7 +74,7 @@ impl Content {
             url: format!("{url}/"),
             out_path: path,
             dir,
-            content: content.unwrap_or_default().into(),
+            content,
             frontmatter,
         })
     }

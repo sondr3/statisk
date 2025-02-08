@@ -109,7 +109,6 @@ pub fn write_sitemap(dest: &Path, context: &Context) -> Result<()> {
     let urls: Vec<_> = context
         .pages
         .values()
-        .filter(|p| !p.frontmatter.special)
         .map(|e| UrlEntry::from_content(e, &context.config.url))
         .collect::<Result<Vec<_>>>()?;
 
