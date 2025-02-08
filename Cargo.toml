@@ -4,32 +4,32 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ahash = "0.8.3"
-anyhow = "1.0.72"
+ahash = "0.8.11"
+anyhow = "1.0.95"
 axum = { version = "0.8.1", features = ["ws"] }
-brotli = "3.3.4"
+brotli = "7.0.0"
 clap = { version = "4.5.28", features = ["derive"] }
-flate2 = "1.0.26"
+flate2 = "1.0.35"
 jiff = { version = "0.1.29", features = ["serde"] }
-jotdown = "0.3.0"
+jotdown = "0.7.0"
 lightningcss = { version = "1.0.0-alpha.63", default-features = false, features = ["browserslist", "bundler", "grid"] }
 minijinja = { version = "2.7.0", features = ["loader", "speedups", "preserve_order"] }
 minijinja-autoreload = "2.7.0"
 minijinja-contrib = { version = "2.7.0", features = ["datetime", "timezone", "rand", "wordcount", "wordwrap", "unicode_wordwrap"] }
 notify = "8.0.0"
-serde = { version = "1.0.176", features = ["derive"] }
-sha1_smol = { version = "1.0.0", features = ["std"] }
-swc_common = "6.0.0"
+serde = { version = "1.0.217", features = ["derive"] }
+sha1_smol = { version = "1.0.1", features = ["std"] }
+swc_common = "6.1.0"
 swc_html_codegen = "6.0.0"
 swc_html_minifier = "10.0.0"
 swc_html_parser = "6.0.0"
 time = { version = "0.3.37", features = ["serde-human-readable", "local-offset"] }
-tokio = { version = "1.32.0", features = ["full"] }
-toml = "0.8.19"
+tokio = { version = "1.43.0", features = ["full"] }
+toml = "0.8.20"
 tower-http = { version = "0.6.2", features = ["fs", "trace"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter", "time"] }
-url = { version = "2.4.0", features = ["serde"] }
+url = { version = "2.5.4", features = ["serde"] }
 walkdir = "2.5.0"
 xml-rs = "0.8.25"
 
