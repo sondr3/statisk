@@ -1,7 +1,7 @@
-use std::{error::Error, fs::read_to_string, path::Path};
+use std::{fs::read_to_string, path::Path};
 
 use ahash::AHashMap;
-use anyhow::Context;
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -25,12 +25,11 @@ pub struct Author {
 }
 
 impl StatiskConfig {
-    pub fn from_path(path: &Path, mode: BuildMode) -> Result<StatiskConfig, Box<dyn Error>> {
+    pub fn from_path(path: &Path, mode: BuildMode) -> Result<StatiskConfig> {
         let content = read_to_string(path)?;
-        let mut config: StatiskConfig =
-            toml::from_str(&content).context("Unable to parse config")?;
+        let mut config: StatiskConfig = toml::from_str(&content)?;
         if mode.normal() {
-            config.url = Url::parse("http://localhost:3000").unwrap();
+            config.url = Url::parse("http://localhost:3000")?;
         }
 
         Ok(config)
