@@ -13,7 +13,7 @@ mod statisk_config;
 mod utils;
 mod watcher;
 
-use std::{env::current_dir, path::PathBuf, thread, time::Instant};
+use std::{env::current_dir, fs, path::PathBuf, thread, time::Instant};
 
 use anyhow::{bail, Result};
 use clap::{Parser, Subcommand, ValueHint};
@@ -85,6 +85,11 @@ async fn main() -> Result<()> {
     };
 
     let paths = Paths::new(root);
+    if paths.out.exists() {
+        tracing::debug!("Removing out directory");
+        fs::remove_dir_all(&paths.out)?;
+    }
+
     let config = match StatiskConfig::from_path(&paths.root.join("statisk.toml"), mode) {
         Ok(config) => config,
         Err(err) => bail!("could not read config: {:?}", err),
