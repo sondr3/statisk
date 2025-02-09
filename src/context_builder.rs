@@ -47,7 +47,7 @@ impl ContextBuilder {
         let public_files = collect_public_files(paths);
         let mut pages: AHashMap<_, _> = pages.into_iter().map(|p| (p.filename(), p)).collect();
         pages.extend(
-            collect_pages(&paths)?
+            collect_pages(paths)?
                 .into_iter()
                 .map(|p| (p.filename(), p))
                 .collect::<Vec<_>>(),
@@ -92,7 +92,7 @@ pub fn collect_content(paths: &Paths) -> Result<Vec<Content>> {
 
 pub fn collect_pages(paths: &Paths) -> Result<Vec<Content>> {
     find_files(&paths.templates, is_file)
-        .filter(|f| is_page(&f))
+        .filter(|f| is_page(f))
         .map(|f| Content::from_path(&f, &paths.templates, ContentType::from_ext(&f)?))
         .collect()
 }

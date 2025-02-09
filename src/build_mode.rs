@@ -20,12 +20,12 @@ impl Display for BuildMode {
 
 impl BuildMode {
     #[must_use]
-    pub const fn optimize(&self) -> bool {
+    pub const fn optimize(self) -> bool {
         matches!(self, Self::Optimized)
     }
 
     #[must_use]
-    pub const fn normal(&self) -> bool {
+    pub const fn normal(self) -> bool {
         matches!(self, Self::Normal)
     }
 }

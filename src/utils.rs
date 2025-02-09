@@ -23,7 +23,7 @@ pub fn unprefixed_parent(path: &Path, root: impl AsRef<Path>) -> Option<String> 
         .map(|f| f.to_owned().to_string_lossy().to_string())
 }
 
-pub fn split_frontmatter(content: String) -> Option<(Option<String>, String)> {
+pub fn split_frontmatter(content: &str) -> Option<(Option<String>, String)> {
     match content
         .split("+++")
         .map(str::trim)

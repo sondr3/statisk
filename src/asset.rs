@@ -69,6 +69,6 @@ pub fn is_buildable_css_file(entry: &DirEntry) -> bool {
     !entry
         .file_name()
         .to_str()
-        .is_some_and(|f| f.starts_with("_"))
+        .is_some_and(|f| f.starts_with('_'))
         && entry.path().extension().is_some_and(|p| p == "css")
 }

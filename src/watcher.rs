@@ -25,7 +25,7 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate:
                 &["html", "xml"],
                 |event| {
                     for path in event.paths.iter().collect::<HashSet<_>>() {
-                        content_watch_handler(paths, path, &context, tx)?;
+                        content_watch_handler(paths, path, context, tx)?;
                     }
                     Ok(())
                 },

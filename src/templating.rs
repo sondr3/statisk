@@ -1,7 +1,4 @@
-use std::{
-    fs::read_to_string,
-    path::{Path, PathBuf},
-};
+use std::{fs::read_to_string, path::Path};
 
 use ahash::AHashMap;
 use anyhow::{anyhow, Context, Result};
@@ -21,13 +18,13 @@ pub fn is_page(path: &Path) -> bool {
 
 pub fn is_partial(path: &Path) -> bool {
     path.file_name()
-        .is_some_and(|f| f.to_str().is_some_and(|p| p.starts_with("_")))
+        .is_some_and(|f| f.to_str().is_some_and(|p| p.starts_with('_')))
 }
 
 pub fn is_template(path: &Path) -> bool {
     path.file_stem().is_some_and(|f| {
         f.to_str()
-            .is_some_and(|p| p.starts_with("[") && p.ends_with("]"))
+            .is_some_and(|p| p.starts_with('[') && p.ends_with(']'))
     })
 }
 
@@ -60,7 +57,6 @@ pub fn create_base_context(mode: BuildMode, context: &SContext) -> Value {
     let pages = context
         .pages
         .values()
-        .into_iter()
         .filter(|c| c.is_page())
         .map(|c| c.context(context).unwrap())
         .collect::<Vec<_>>();
@@ -75,8 +71,8 @@ pub fn create_base_context(mode: BuildMode, context: &SContext) -> Value {
 }
 
 impl Templates {
-    pub fn new(root: PathBuf) -> Result<Self> {
-        let template_path = root.clone();
+    pub fn new(root: &Path) -> Result<Self> {
+        let template_path = root.to_path_buf();
         let env = AutoReloader::new(move |notifier| {
             let mut env = Environment::new();
             env.set_loader(path_loader(&template_path));
@@ -97,27 +93,26 @@ impl Templates {
             templates: AHashMap::new(),
         };
 
-        for file in find_files(&root, is_file) {
-            templates.add_template(file, &root)?;
+        for file in find_files(root, is_file) {
+            templates.add_template(&file, root)?;
         }
 
         Ok(templates)
     }
 
-    pub fn add_template(&mut self, path: PathBuf, root: &Path) -> Result<()> {
+    pub fn add_template(&mut self, path: &Path, root: &Path) -> Result<()> {
         let name = path
             .file_stem()
             .ok_or(anyhow!("No file name"))?
             .to_string_lossy()
-            .replace("[", "")
-            .replace("]", "");
+            .replace(['[', ']'], "");
 
-        let dir = unprefixed_parent(&path, root);
+        let dir = unprefixed_parent(path, root);
 
-        let content = read_to_string(&path).context("could not read file")?;
+        let content = read_to_string(path).context("could not read file")?;
         let tmpl_path = TemplatePath(dir, name);
 
-        if is_template(&path) {
+        if is_template(path) {
             let template = Template { content };
             self.templates.insert(tmpl_path, template);
         }
@@ -129,7 +124,7 @@ impl Templates {
         let template = self
             .templates
             .get(path)
-            .ok_or(anyhow!("Could not find template"))?;
+            .ok_or_else(|| anyhow!("Could not find template"))?;
 
         let env = self.environment.acquire_env()?;
         let template = env.template_from_str(&template.content)?;

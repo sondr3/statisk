@@ -13,6 +13,7 @@ use crate::{
     BuildMode,
 };
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Copy, Clone, Serialize)]
 pub enum ContentType {
     HTML,
@@ -52,7 +53,7 @@ impl Content {
         let stem = stem.as_ref();
 
         let (frontmatter, content) =
-            split_frontmatter(file).ok_or(anyhow!("Could not find content or frontmatter"))?;
+            split_frontmatter(&file).ok_or(anyhow!("Could not find content or frontmatter"))?;
 
         let frontmatter = match (kind, frontmatter) {
             (ContentType::XML, None) => Frontmatter::empty(),
@@ -60,14 +61,14 @@ impl Content {
             _ => bail!("Missing frontmatter in content"),
         };
 
-        let dir = unprefixed_parent(&path, root);
+        let dir = unprefixed_parent(path, root);
         let out_path: PathBuf = match kind {
             ContentType::XML => PathBuf::from(path.file_name().unwrap_or_default()),
             ContentType::HTML | ContentType::Unknown => match (&dir, &frontmatter.slug) {
                 (None, None) => PathBuf::from("index.html"),
                 (None, Some(slug)) => [slug, "index.html"].into_iter().collect(),
-                (Some(dir), Some(slug)) => [&dir, &slug, "index.html"].into_iter().collect(),
-                (Some(dir), None) => [&dir, "index.html"].into_iter().collect(),
+                (Some(dir), Some(slug)) => [dir, slug, "index.html"].into_iter().collect(),
+                (Some(dir), None) => [dir, "index.html"].into_iter().collect(),
             },
             ContentType::Jotdown => match &frontmatter.slug {
                 Some(slug) => [slug, "index.html"].into_iter().collect(),

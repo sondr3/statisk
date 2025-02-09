@@ -1,16 +1,19 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use lightningcss::{
     printer::PrinterOptions,
     stylesheet::{MinifyOptions, ParserOptions, StyleSheet},
     targets::{Browsers, Targets},
 };
 use swc_common::{BytePos, FileName, SourceFile};
-use swc_html_codegen::{writer::basic::BasicHtmlWriter, CodeGenerator, CodegenConfig, Emit};
+use swc_html_codegen::{
+    writer::basic::{BasicHtmlWriter, BasicHtmlWriterConfig},
+    CodeGenerator, CodegenConfig, Emit,
+};
 use swc_html_minifier::{
     minify_document,
     option::{CollapseWhitespaces, MinifyJsOption, RemoveRedundantAttributes},
 };
-use swc_html_parser::parse_file_as_document;
+use swc_html_parser::{parse_file_as_document, parser::ParserConfig};
 
 pub fn html(content: String) -> Result<Vec<u8>> {
     let source_file = SourceFile::new(
@@ -21,11 +24,11 @@ pub fn html(content: String) -> Result<Vec<u8>> {
         BytePos(1),
     );
     let mut errors = vec![];
-    let mut document =
-        parse_file_as_document(&source_file, Default::default(), &mut errors).unwrap();
+    let mut document = parse_file_as_document(&source_file, ParserConfig::default(), &mut errors)
+        .map_err(|err| anyhow!("Could not parse HTML: {:?}", err))?;
 
     if !errors.is_empty() {
-        eprintln!("{:#?}", errors);
+        eprintln!("{errors:#?}");
     }
     minify_document(
         &mut document,
@@ -47,13 +50,13 @@ pub fn html(content: String) -> Result<Vec<u8>> {
     );
     let mut minified_source = String::new();
     let mut code_generator = CodeGenerator::new(
-        BasicHtmlWriter::new(&mut minified_source, None, Default::default()),
+        BasicHtmlWriter::new(&mut minified_source, None, BasicHtmlWriterConfig::default()),
         CodegenConfig {
             minify: true,
             ..CodegenConfig::default()
         },
     );
-    code_generator.emit(&document).unwrap();
+    code_generator.emit(&document)?;
     Ok(minified_source.into())
 }
 

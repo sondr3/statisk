@@ -83,10 +83,10 @@ async fn main() -> Result<()> {
 
     let mode = match opts.cmd {
         None | Some(Cmds::Dev) => BuildMode::Normal,
-        Some(Cmds::Build) | Some(Cmds::Serve) => BuildMode::Optimized,
+        Some(Cmds::Build | Cmds::Serve) => BuildMode::Optimized,
     };
 
-    let paths = Paths::new(root);
+    let paths = Paths::new(&root);
     if paths.out.exists() {
         tracing::debug!("Removing out directory");
         fs::remove_dir_all(&paths.out)?;
@@ -111,7 +111,7 @@ async fn main() -> Result<()> {
 
     let now = Instant::now();
 
-    let templates = Templates::new(paths.templates.clone())?;
+    let templates = Templates::new(&paths.templates)?;
     let context = ContextBuilder::new(&paths, mode)?.build(templates, config, mode);
     let renderer = Renderer::new(&paths.out);
 

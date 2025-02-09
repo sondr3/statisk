@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 const OUT_PATH: &str = "_dist";
 const TEMPLATE_PATH: &str = "templates";
@@ -21,9 +21,9 @@ pub struct Paths {
 }
 
 impl Paths {
-    pub fn new(root: PathBuf) -> Self {
+    pub fn new(root: &Path) -> Self {
         Self {
-            root: root.clone(),
+            root: root.to_path_buf(),
             out: root.join(OUT_PATH),
             templates: root.join(TEMPLATE_PATH),
             public: root.join(PUBLIC_PATH),

@@ -21,7 +21,7 @@ pub struct Frontmatter {
 impl Frontmatter {
     pub fn empty() -> Self {
         Frontmatter {
-            title: "".to_string(),
+            title: String::new(),
             subtitle: None,
             description: None,
             slug: None,

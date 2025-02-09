@@ -30,8 +30,8 @@ impl Context {
             config,
             assets,
             pages,
-            templates,
             public_files,
+            templates,
             mode,
         }
     }
