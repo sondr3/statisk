@@ -25,7 +25,8 @@ impl Frontmatter {
     }
 
     pub fn url(&self, stem: &str) -> String {
-        self.slug.as_ref().map_or(stem, |s| s).to_string()
+        let url = self.slug.as_ref().map_or(stem, |s| s).to_string();
+        format!("{url}/")
     }
 
     pub fn to_context(&self) -> Value {

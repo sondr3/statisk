@@ -4,7 +4,7 @@ use std::{
 };
 
 use ahash::AHashMap;
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{anyhow, Context, Result};
 use minijinja::{context, path_loader, Environment, State, Value};
 use minijinja_autoreload::AutoReloader;
 use minijinja_contrib::add_to_environment;
@@ -12,8 +12,7 @@ use minijinja_contrib::add_to_environment;
 use crate::{
     build_mode::BuildMode,
     context::Context as SContext,
-    frontmatter::Frontmatter,
-    utils::{filename, find_files, is_file, split_frontmatter, unprefixed_parent},
+    utils::{filename, find_files, is_file, unprefixed_parent},
 };
 
 pub fn is_page(path: &Path) -> bool {
@@ -49,49 +48,12 @@ pub struct Template {
     pub content: String,
 }
 
-#[derive(Debug)]
-pub struct TemplatePage {
-    pub frontmatter: Option<Frontmatter>,
-    pub content: String,
-}
-
-impl TemplatePage {
-    pub fn new(content: String) -> Result<Self> {
-        match split_frontmatter(content) {
-            Some((Some(frontmatter), content)) => {
-                let frontmatter = Frontmatter::deserialize(&frontmatter)?;
-                Ok(TemplatePage {
-                    frontmatter: Some(frontmatter),
-                    content,
-                })
-            }
-            Some((None, content)) => Ok(TemplatePage {
-                frontmatter: None,
-                content,
-            }),
-            None => bail!("No content or frontmatter found for page"),
-        }
-    }
-}
-
 #[derive(Debug, Eq, PartialEq, Hash)]
 pub struct TemplatePath(pub Option<String>, pub String);
-
-impl TemplatePath {
-    pub fn as_path_buf(&self) -> PathBuf {
-        let (dir, file) = (&self.0, &self.1);
-        if let Some(dir) = dir {
-            return [dir, file].iter().collect();
-        }
-
-        PathBuf::from(file)
-    }
-}
 
 pub struct Templates {
     pub environment: AutoReloader,
     pub templates: AHashMap<TemplatePath, Template>,
-    pub pages: AHashMap<TemplatePath, TemplatePage>,
 }
 
 pub fn create_base_context(mode: BuildMode, context: &SContext) -> Value {
@@ -121,7 +83,6 @@ impl Templates {
         let mut templates = Templates {
             environment: env,
             templates: AHashMap::new(),
-            pages: AHashMap::new(),
         };
 
         for file in find_files(&root, is_file) {
@@ -143,10 +104,8 @@ impl Templates {
 
         let content = read_to_string(&path).context("could not read file")?;
         let tmpl_path = TemplatePath(dir, name);
-        if is_page(&path) {
-            let page = TemplatePage::new(content)?;
-            self.pages.insert(tmpl_path, page);
-        } else if is_template(&path) {
+
+        if is_template(&path) {
             let template = Template { content };
             self.templates.insert(tmpl_path, template);
         }
@@ -159,33 +118,6 @@ impl Templates {
             .templates
             .get(path)
             .ok_or(anyhow!("Could not find template"))?;
-
-        let env = self.environment.acquire_env()?;
-        let template = env.template_from_str(&template.content)?;
-        template.render(context).context("Could not render")
-    }
-
-    pub fn render_template_page(&self, path: &TemplatePath, context: Value) -> Result<String> {
-        let template = self
-            .pages
-            .get(path)
-            .ok_or(anyhow!("Could not find template"))?;
-
-        let page_context = match &template.frontmatter {
-            Some(frontmatter) => {
-                context! {
-                    title => frontmatter.title.clone(),
-                    subtitle => frontmatter.subtitle.clone(),
-                    description => frontmatter.description.clone(),
-                }
-            }
-            None => context! {},
-        };
-
-        let context = context! {
-            ..context,
-            ..page_context
-        };
 
         let env = self.environment.acquire_env()?;
         let template = env.template_from_str(&template.content)?;

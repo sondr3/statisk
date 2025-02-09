@@ -5,11 +5,11 @@ use anyhow::Result;
 
 use crate::{
     asset::{is_buildable_css_file, Asset, PublicFile},
-    content::Content,
+    content::{Content, ContentType},
     context::Context,
     paths::{Paths, LIVERELOAD_JS},
     statisk_config::StatiskConfig,
-    templating::Templates,
+    templating::{is_page, Templates},
     utils::{find_files, is_file},
     BuildMode,
 };
@@ -45,7 +45,13 @@ impl ContextBuilder {
         }
 
         let public_files = collect_public_files(paths);
-        let pages: AHashMap<_, _> = pages.into_iter().map(|p| (p.filename(), p)).collect();
+        let mut pages: AHashMap<_, _> = pages.into_iter().map(|p| (p.filename(), p)).collect();
+        pages.extend(
+            collect_pages(&paths)?
+                .into_iter()
+                .map(|p| (p.filename(), p))
+                .collect::<Vec<_>>(),
+        );
 
         Ok(ContextBuilder {
             assets,
@@ -80,7 +86,14 @@ fn collect_js(paths: &Paths) -> Result<Vec<Asset>> {
 
 pub fn collect_content(paths: &Paths) -> Result<Vec<Content>> {
     find_files(&paths.content, is_file)
-        .map(|f| Content::from_path(&f, &paths.content))
+        .map(|f| Content::from_path(&f, &paths.content, ContentType::Jotdown))
+        .collect()
+}
+
+pub fn collect_pages(paths: &Paths) -> Result<Vec<Content>> {
+    find_files(&paths.templates, is_file)
+        .filter(|f| is_page(&f))
+        .map(|f| Content::from_path(&f, &paths.templates, ContentType::Template))
         .collect()
 }
 

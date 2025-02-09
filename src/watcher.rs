@@ -10,28 +10,29 @@ use tokio::sync::broadcast::Sender;
 use crate::{
     asset::{is_buildable_css_file, Asset},
     context::Context as AppContext,
-    context_builder::collect_content,
+    context_builder::{collect_content, collect_pages},
     paths::Paths,
     render::{write_asset, write_content_iter},
-    templating::{is_page, is_partial, is_template},
+    templating::is_page,
     utils::find_files,
     BuildMode,
 };
 
 pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate::Event>) {
     thread::scope(|scope| {
-        // let templates = scope.spawn(|| {
-        //     file_watcher(
-        //         &paths.templates.canonicalize()?,
-        //         &["jinja", "html", "xml"],
-        //         |event| {
-        //             for path in event.paths.iter().collect::<HashSet<_>>() {
-        //                 templates_watch_handler(paths, path, &context, tx)?;
-        //             }
-        //             Ok(())
-        //         },
-        //     )
-        // });
+        let templates = scope.spawn(|| {
+            file_watcher(
+                &paths.templates.canonicalize()?,
+                &["jinja", "html", "xml"],
+                |event| {
+                    for path in event.paths.iter().collect::<HashSet<_>>() {
+                        templates_watch_handler(paths, path, &context, tx)?;
+                    }
+                    Ok(())
+                },
+            )
+        });
+
         let css = scope.spawn(|| {
             file_watcher(&paths.css.canonicalize()?, &["css"], |event| {
                 for path in event.paths.iter().collect::<HashSet<_>>() {
@@ -52,7 +53,7 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate:
 
         css.join().unwrap().unwrap();
         content.join().unwrap().unwrap();
-        // templates.join().unwrap().unwrap();
+        templates.join().unwrap().unwrap();
     });
 }
 
@@ -73,7 +74,7 @@ fn css_watch_handler(paths: &Paths, path: &Path, tx: &Sender<crate::Event>) -> R
 fn templates_watch_handler(
     paths: &Paths,
     path: &Path,
-    context: &mut AppContext,
+    context: &AppContext,
     tx: &Sender<crate::Event>,
 ) -> Result<()> {
     tracing::info!(
@@ -81,12 +82,10 @@ fn templates_watch_handler(
         strip_prefix_paths(&paths.root, path)?
     );
 
-    if is_partial(path) {}
-
-    if is_template(path) || is_page(path) {
-        context
-            .templates
-            .add_template(path.to_owned(), &paths.templates)?;
+    if is_page(path) {
+        let pages = collect_pages(paths)?;
+        write_content_iter(&paths.out, BuildMode::Normal, context, pages.iter())?;
+        tx.send(crate::Event::Reload)?;
     }
 
     Ok(())

@@ -9,7 +9,6 @@ use crate::{
     minify::{self},
     sitemap,
     sitemap::UrlEntry,
-    templating::create_base_context,
     utils::{copy_file, write_file},
     BuildMode,
 };
@@ -34,7 +33,6 @@ impl Renderer {
             .values()
             .try_for_each(|a| write_asset(&self.dest, a))?;
 
-        write_pages(&self.dest, context)?;
         write_content(&self.dest, context)?;
         write_sitemap(&self.dest, context)?;
 
@@ -57,27 +55,6 @@ pub fn write_asset(dest: &Path, asset: &Asset) -> Result<()> {
         &dest.join(asset.build_path.file_name().unwrap()),
         &asset.content,
     )
-}
-
-pub fn write_pages(dest: &Path, context: &Context) -> Result<()> {
-    for path in context.templates.pages.keys() {
-        let out_path = path.as_path_buf().with_extension("html");
-
-        let rendered = context
-            .templates
-            .render_template_page(path, create_base_context(context.mode, context))?;
-
-        write_file(
-            &dest.join(out_path),
-            if context.mode.optimize() {
-                minify::html(rendered)?
-            } else {
-                rendered.into()
-            },
-        )?;
-    }
-
-    Ok(())
 }
 
 pub fn write_content(dest: &Path, context: &Context) -> Result<()> {
