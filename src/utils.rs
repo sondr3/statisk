@@ -132,7 +132,7 @@ pub mod toml_date_deserializer {
 
     use super::toml_date_jiff_serde;
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
+    pub fn _deserialize<'de, D>(deserializer: D) -> Result<Date, D::Error>
     where
         D: Deserializer<'de>,
     {
