@@ -5,12 +5,13 @@ use std::{
 
 use anyhow::{Context, Result};
 use jiff::civil::Date;
+use serde::{Deserialize, Serialize};
 use url::Url;
 use xml::{common::XmlVersion, writer::XmlEvent, EmitterConfig, EventWriter};
 
 use crate::content::Content;
 
-#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Serialize, Deserialize)]
 pub enum ChangeFreq {
     Always,
     Hourly,

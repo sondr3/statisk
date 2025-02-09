@@ -5,18 +5,15 @@ use std::{
 
 use ahash::AHashMap;
 use anyhow::{anyhow, bail, Context, Result};
-use jiff::civil::Date;
 use minijinja::{context, path_loader, Environment, State, Value};
 use minijinja_autoreload::AutoReloader;
 use minijinja_contrib::add_to_environment;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     build_mode::BuildMode,
     context::Context as SContext,
-    utils::{
-        filename, find_files, is_file, split_frontmatter, toml_date_jiff_serde, unprefixed_parent,
-    },
+    frontmatter::Frontmatter,
+    utils::{filename, find_files, is_file, split_frontmatter, unprefixed_parent},
 };
 
 pub fn is_page(path: &Path) -> bool {
@@ -52,22 +49,9 @@ pub struct Template {
     pub content: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct PageFrontmatter {
-    pub title: String,
-    pub subtitle: Option<String>,
-    pub description: String,
-    pub slug: Option<String>,
-    pub layout: Option<String>,
-    #[serde(with = "toml_date_jiff_serde", default)]
-    pub last_modified: Option<Date>,
-    #[serde(with = "toml_date_jiff_serde", default)]
-    pub created: Option<Date>,
-}
-
 #[derive(Debug)]
 pub struct TemplatePage {
-    pub frontmatter: Option<PageFrontmatter>,
+    pub frontmatter: Option<Frontmatter>,
     pub content: String,
 }
 
@@ -75,8 +59,7 @@ impl TemplatePage {
     pub fn new(content: String) -> Result<Self> {
         match split_frontmatter(content) {
             Some((Some(frontmatter), content)) => {
-                let frontmatter =
-                    toml::from_str(&frontmatter).context("Could not parse frontmatter")?;
+                let frontmatter = Frontmatter::deserialize(&frontmatter)?;
                 Ok(TemplatePage {
                     frontmatter: Some(frontmatter),
                     content,

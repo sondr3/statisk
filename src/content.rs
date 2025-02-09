@@ -1,28 +1,16 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Result};
-use jiff::civil::Date;
 use jotdown::{Attributes, Container, Event, Render};
 use minijinja::{context, value::Value};
-use serde::Deserialize;
 
 use crate::{
     context::Context as SContext,
+    frontmatter::Frontmatter,
     templating::{create_base_context, TemplatePath},
-    utils::{split_frontmatter, toml_date_jiff_serde, unprefixed_parent},
+    utils::{split_frontmatter, unprefixed_parent},
     BuildMode,
 };
-
-#[derive(Debug, Deserialize)]
-pub struct Frontmatter {
-    pub title: String,
-    #[serde(with = "toml_date_jiff_serde", default)]
-    pub last_modified: Option<Date>,
-    pub subtitle: Option<String>,
-    pub description: String,
-    pub slug: Option<String>,
-    pub layout: Option<String>,
-}
 
 #[derive(Debug)]
 pub struct Content {
@@ -106,13 +94,12 @@ impl Content {
     fn context(&self, context: &SContext, mode: BuildMode) -> Result<Value> {
         let base_context = create_base_context(mode, context);
         let content = self.content()?;
+        let frontmatter_context = self.frontmatter.to_context();
 
         Ok(context! {
             ..base_context,
+            ..frontmatter_context,
             ..context! {
-                title => self.frontmatter.title.clone(),
-                subtitle => self.frontmatter.subtitle.clone(),
-                description => self.frontmatter.description.clone(),
                 content => content,
                 canonical_url => context.config.url.join(&self.url)?,
             }

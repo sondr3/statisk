@@ -4,6 +4,7 @@ mod compress;
 mod content;
 mod context;
 mod context_builder;
+mod frontmatter;
 mod minify;
 mod paths;
 mod render;
