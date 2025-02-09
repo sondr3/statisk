@@ -5,23 +5,33 @@
 </p>
 
 <p align="center">
-    <b>Build awful static sites</b>
+    <b>A simple and opinionated static site generator</b>
 </p>
 
-- **Simple**: Does nothing
+- **Simple**: Does what I want and not much else
+- **Optimized**: Minifies and compresses all assets
+- **Opinionated**: Built for my needs and mostly only my needs
 
 <details>
 <summary>Table of Contents</summary>
 <br />
 
 - [What and why](#what-and-why)
+- [Installation](#installation)
 - [License](#license)
 
 </details>
 
 # What and why
 
-TODO.
+This is a journey every single developer embarks on... writing a tool to build
+a static site generator. This one is mine, and mine only.
+
+# Installation
+
+1. `cargo install statisk`
+2. ???
+3. Profit
 
 # LICENSE
 

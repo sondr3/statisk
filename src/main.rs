@@ -1,5 +1,6 @@
 mod asset;
 mod build_mode;
+mod cli;
 mod compress;
 mod content;
 mod context;
@@ -15,10 +16,10 @@ mod templating;
 mod utils;
 mod watcher;
 
-use std::{env::current_dir, fs, path::PathBuf, thread, time::Instant};
+use std::{env::current_dir, fs, thread, time::Instant};
 
 use anyhow::{bail, Result};
-use clap::{Parser, Subcommand, ValueHint};
+use clap::{CommandFactory, Parser};
 use time::UtcOffset;
 use tokio::sync::broadcast;
 use tracing_subscriber::{
@@ -26,33 +27,15 @@ use tracing_subscriber::{
 };
 
 use crate::{
-    build_mode::BuildMode, context_builder::ContextBuilder, paths::Paths, render::Renderer,
-    statisk_config::StatiskConfig, templating::Templates, watcher::start_live_reload,
+    build_mode::BuildMode,
+    cli::{print_completion, Cmds, Options},
+    context_builder::ContextBuilder,
+    paths::Paths,
+    render::Renderer,
+    statisk_config::StatiskConfig,
+    templating::Templates,
+    watcher::start_live_reload,
 };
-
-#[derive(Debug, Parser)]
-#[command(version, about, author)]
-#[clap(args_conflicts_with_subcommands = true)]
-struct Options {
-    #[arg(long, short)]
-    pub verbose: bool,
-    /// Directory to run in
-    #[arg(value_hint = ValueHint::DirPath, value_name = "dir", global = true)]
-    pub dir: Option<PathBuf>,
-    /// Configuration management
-    #[command(subcommand)]
-    pub cmd: Option<Cmds>,
-}
-
-#[derive(Subcommand, Debug)]
-pub enum Cmds {
-    /// start the dev loop
-    Dev,
-    /// build for production
-    Build,
-    /// start a local server
-    Serve,
-}
 
 #[derive(Debug, Copy, Clone)]
 pub enum Event {
@@ -82,7 +65,7 @@ async fn main() -> Result<()> {
     };
 
     let mode = match opts.cmd {
-        None | Some(Cmds::Dev) => BuildMode::Normal,
+        None | Some(Cmds::Dev | Cmds::Completion { .. }) => BuildMode::Normal,
         Some(Cmds::Build | Cmds::Serve) => BuildMode::Optimized,
     };
 
@@ -106,6 +89,11 @@ async fn main() -> Result<()> {
         }
         Some(Cmds::Serve) => {
             tracing::info!("serving locally...");
+        }
+        Some(Cmds::Completion { shell }) => {
+            let mut app = Options::command();
+            print_completion(shell, &mut app);
+            return Ok(());
         }
     }
 
@@ -151,6 +139,7 @@ async fn main() -> Result<()> {
             let (tx, _) = broadcast::channel(100);
             server::create(&paths.out, tx).await?;
         }
+        Some(Cmds::Completion { .. }) => unreachable!(),
     }
 
     Ok(())
