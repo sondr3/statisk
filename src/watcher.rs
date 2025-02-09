@@ -10,10 +10,9 @@ use tokio::sync::broadcast::Sender;
 use crate::{
     asset::{is_buildable_css_file, Asset},
     context::Context as AppContext,
-    context_builder::{collect_content, collect_pages},
+    context_builder::collect_content,
     paths::Paths,
     render::{write_asset, write_content_iter},
-    templating::is_page,
     utils::find_files,
     BuildMode,
 };
@@ -23,10 +22,10 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate:
         let templates = scope.spawn(|| {
             file_watcher(
                 &paths.templates.canonicalize()?,
-                &["jinja", "html", "xml"],
+                &["html", "xml"],
                 |event| {
                     for path in event.paths.iter().collect::<HashSet<_>>() {
-                        templates_watch_handler(paths, path, &context, tx)?;
+                        content_watch_handler(paths, path, &context, tx)?;
                     }
                     Ok(())
                 },
@@ -68,26 +67,6 @@ fn css_watch_handler(paths: &Paths, path: &Path, tx: &Sender<crate::Event>) -> R
     }
 
     tx.send(crate::Event::Reload)?;
-    Ok(())
-}
-
-fn templates_watch_handler(
-    paths: &Paths,
-    path: &Path,
-    context: &AppContext,
-    tx: &Sender<crate::Event>,
-) -> Result<()> {
-    tracing::info!(
-        "File(s) {:?} changed, rebuilding site",
-        strip_prefix_paths(&paths.root, path)?
-    );
-
-    if is_page(path) {
-        let pages = collect_pages(paths)?;
-        write_content_iter(&paths.out, BuildMode::Normal, context, pages.iter())?;
-        tx.send(crate::Event::Reload)?;
-    }
-
     Ok(())
 }
 

@@ -4,11 +4,9 @@ use anyhow::Result;
 
 use crate::{
     asset::{Asset, PublicFile},
-    content::Content,
+    content::{Content, ContentType},
     context::Context,
     minify::{self},
-    sitemap,
-    sitemap::UrlEntry,
     utils::{copy_file, write_file},
     BuildMode,
 };
@@ -34,7 +32,6 @@ impl Renderer {
             .try_for_each(|a| write_asset(&self.dest, a))?;
 
         write_content(&self.dest, context)?;
-        write_sitemap(&self.dest, context)?;
 
         Ok(())
     }
@@ -73,24 +70,13 @@ where
     pages.into_iter().try_for_each(|f| {
         write_file(
             &dest.join(&f.out_path),
-            if mode.optimize() {
-                minify::html(f.render(mode, context)?)?
-            } else {
-                f.render(mode, context)?.into()
+            match (mode.optimize(), f.kind) {
+                (true, ContentType::HTML) => minify::html(f.render(mode, context)?)?,
+                (true, _) => f.render(mode, context)?.into(),
+                (false, _) => f.render(mode, context)?.into(),
             },
         )
     })
-}
-
-pub fn write_sitemap(dest: &Path, context: &Context) -> Result<()> {
-    let urls: Vec<_> = context
-        .pages
-        .values()
-        .map(|e| UrlEntry::from_content(e, &context.config.url))
-        .collect::<Result<Vec<_>>>()?;
-
-    let sitemap = sitemap::create(urls)?;
-    write_file(&dest.join("sitemap.xml"), sitemap)
 }
 
 pub fn copy_public_files(files: &[PublicFile], dest: &Path) -> Result<()> {

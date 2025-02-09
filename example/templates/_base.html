@@ -9,16 +9,17 @@
     <meta content="{{ description|safe }}" name="description"/>
 
     <link href="/{{ get_asset('styles.css') }}" rel="stylesheet"/>
+    <link href="{{ canonical_url }}" rel="canonical">
 
     {% if is_dev %}
     <script src="/livereload.js"></script>
     {% endif %}
 </head>
 <body class="root">
-{% include "_navbar.jinja" %}
+{% include "_navbar.html" %}
 {% block content %}
 <p>Placeholder...</p>
 {% endblock %}
-{% include "_footer.jinja" %}
+{% include "_footer.html" %}
 </body>
 </html>

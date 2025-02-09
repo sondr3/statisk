@@ -93,7 +93,7 @@ pub fn collect_content(paths: &Paths) -> Result<Vec<Content>> {
 pub fn collect_pages(paths: &Paths) -> Result<Vec<Content>> {
     find_files(&paths.templates, is_file)
         .filter(|f| is_page(&f))
-        .map(|f| Content::from_path(&f, &paths.templates, ContentType::Template))
+        .map(|f| Content::from_path(&f, &paths.templates, ContentType::from_ext(&f)?))
         .collect()
 }
 

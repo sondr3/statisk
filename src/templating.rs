@@ -57,11 +57,20 @@ pub struct Templates {
 }
 
 pub fn create_base_context(mode: BuildMode, context: &SContext) -> Value {
+    let pages = context
+        .pages
+        .values()
+        .into_iter()
+        .filter(|c| c.is_page())
+        .map(|c| c.context(context).unwrap())
+        .collect::<Vec<_>>();
+
     context! {
         mode => mode,
         is_dev => mode.normal(),
         assets => context.assets,
         config => context.config,
+        pages => pages
     }
 }
 
@@ -73,6 +82,9 @@ impl Templates {
             env.set_loader(path_loader(&template_path));
             add_to_environment(&mut env);
             env.add_function("get_asset", get_asset);
+
+            env.set_trim_blocks(true);
+            env.set_lstrip_blocks(true);
 
             notifier.set_fast_reload(true);
 

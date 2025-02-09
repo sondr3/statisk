@@ -10,7 +10,6 @@ mod minify;
 mod paths;
 mod render;
 mod server;
-mod sitemap;
 mod statisk_config;
 mod templating;
 mod utils;
