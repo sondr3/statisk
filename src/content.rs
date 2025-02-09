@@ -1,12 +1,12 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, bail, Result};
-use jotdown::{Attributes, Container, Event, Render};
 use minijinja::{context, value::Value};
 
 use crate::{
     context::Context as SContext,
     frontmatter::Frontmatter,
+    jotdown::render_jotdown,
     templating::{create_base_context, TemplatePath},
     utils::{split_frontmatter, unprefixed_parent},
     BuildMode,
@@ -84,16 +84,9 @@ impl Content {
         }
     }
 
-    fn content(&self) -> Result<String> {
-        let events = jotdown::Parser::new(&self.content).map(jotdown_event_mapper);
-        let mut html = String::new();
-        jotdown::html::Renderer::default().push(events, &mut html)?;
-        Ok(html)
-    }
-
     fn context(&self, context: &SContext, mode: BuildMode) -> Result<Value> {
         let base_context = create_base_context(mode, context);
-        let content = self.content()?;
+        let content = render_jotdown(&self.content)?;
         let frontmatter_context = self.frontmatter.to_context();
 
         Ok(context! {
@@ -104,47 +97,5 @@ impl Content {
                 canonical_url => context.config.url.join(&self.url)?,
             }
         })
-    }
-}
-
-fn jotdown_event_mapper(event: jotdown::Event) -> jotdown::Event {
-    match event {
-        Event::Start(container, attrs) => jotdown_container_mapper(container, attrs).into(),
-        _ => event,
-    }
-}
-
-struct ContainerWrapper<'a>(Container<'a>, Attributes<'a>);
-
-impl<'a> From<ContainerWrapper<'a>> for jotdown::Event<'a> {
-    fn from(val: ContainerWrapper<'a>) -> Self {
-        Event::Start(val.0, val.1)
-    }
-}
-
-fn jotdown_container_mapper<'a>(
-    container: Container<'a>,
-    attrs: Attributes<'a>,
-) -> ContainerWrapper<'a> {
-    match container {
-        Container::Heading {
-            id,
-            level,
-            has_section,
-        } => ContainerWrapper(
-            Container::Heading {
-                level,
-                id: id.to_lowercase().into(),
-                has_section,
-            },
-            attrs,
-        ),
-        Container::Section { id } => ContainerWrapper(
-            Container::Section {
-                id: id.to_lowercase().into(),
-            },
-            attrs,
-        ),
-        _ => ContainerWrapper(container, attrs),
     }
 }
