@@ -1,0 +1,33 @@
+name: statisk build
+author: Sondre Aasemoen
+description: Build your statisk website
+branding:
+  icon: globe
+  color: blue
+
+inputs:
+  version:
+    description: version to download
+    required: false
+    default: latest
+  dir:
+    description: directory to run from
+    required: false
+    default: "."
+
+runs:
+  using: "composite"
+  steps:
+    - name: Download binary
+      shell: bash
+      run: |
+        PLATFORM="x86_64-unknown-linux-musl"
+        VERSION_PATH=${{ inputs.version != 'latest' && format('download/{0}', inputs.version) || 'latest/download' }}
+        URL="https://github.com/sondr3/statisk/releases/${VERSION_PATH}/statisk-${PLATFORM}.tar.gz"
+
+        curl -L -o statisk.tar.gz "$URL"
+        tar xzf statisk.tar.gz
+
+    - name: Run Statisk
+      shell: bash
+      run: ./statisk build ${{ inputs.dir }}
