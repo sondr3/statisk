@@ -3,6 +3,14 @@ name: pipeline
 on: [ push, pull_request ]
 
 jobs:
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: sondr3/statisk@main
+        with:
+          dir: "example"
+
   check:
     runs-on: ubuntu-latest
 
