@@ -97,7 +97,7 @@ impl Content {
     pub fn render(&self, mode: BuildMode, context: &SContext) -> Result<String> {
         match self.kind {
             ContentType::HTML | ContentType::XML => self.render_template(mode, context),
-            ContentType::Jotdown => self.render_jotdown(context),
+            ContentType::Jotdown => self.render_jotdown(mode, context),
             ContentType::Unknown => bail!("Cannot render unknown files"),
         }
     }
@@ -120,11 +120,13 @@ impl Content {
         }
     }
 
-    fn render_jotdown(&self, context: &SContext) -> Result<String> {
-        let tmpl_context = self.context(context)?;
-        context
+    fn render_jotdown(&self, mode: BuildMode, app_context: &SContext) -> Result<String> {
+        let base_context = create_base_context(mode, app_context);
+        let context = self.context(app_context)?;
+        let context = context! { ..base_context, ..context };
+        app_context
             .templates
-            .render_template(&self.layout(), tmpl_context)
+            .render_template(&self.layout(), context)
     }
 
     fn render_template(&self, mode: BuildMode, app_context: &SContext) -> Result<String> {
