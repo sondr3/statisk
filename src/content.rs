@@ -103,7 +103,7 @@ impl Content {
     }
 
     pub fn filename(&self) -> String {
-        self.source.file_stem().map_or_else(
+        self.source.file_name().map_or_else(
             || panic!("No filename found"),
             |name| name.to_string_lossy().to_string(),
         )
