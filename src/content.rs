@@ -27,7 +27,7 @@ impl ContentType {
         match path.extension() {
             None => bail!("No extension for content type"),
             Some(kind) => match kind.to_string_lossy().to_string().as_ref() {
-                "xml" => Ok(ContentType::XML),
+                "xml" | "xsl" => Ok(ContentType::XML),
                 "html" => Ok(ContentType::HTML),
                 _ => Ok(ContentType::Unknown),
             },

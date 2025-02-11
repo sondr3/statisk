@@ -22,7 +22,7 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate:
         let templates = scope.spawn(|| {
             file_watcher(
                 &paths.templates.canonicalize()?,
-                &["html", "xml"],
+                &["html", "xml", "xsl"],
                 |event| {
                     for path in event.paths.iter().collect::<HashSet<_>>() {
                         content_watch_handler(paths, path, context, tx)?;
