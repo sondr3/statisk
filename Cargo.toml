@@ -16,10 +16,10 @@ ahash = "0.8.11"
 anyhow = "1.0.95"
 axum = { version = "0.8.1", features = ["ws"] }
 brotli = "7.0.0"
-clap = { version = "4.5.28", features = ["derive"] }
+clap = { version = "4.5.29", features = ["derive"] }
 clap_complete = "4.5.44"
 flate2 = "1.0.35"
-jiff = { version = "0.1.29", features = ["serde"] }
+jiff = { version = "0.2.0", features = ["serde"] }
 jotdown = "0.7.0"
 lightningcss = { version = "1.0.0-alpha.63", default-features = false, features = ["browserslist", "bundler", "grid"] }
 minijinja = { version = "2.7.0", features = ["loader", "speedups", "preserve_order"] }
@@ -45,7 +45,7 @@ walkdir = "2.5.0"
 insta = { version = "1.42.1", features = ["toml"] }
 
 [build-dependencies]
-clap = { version = "4.5.28", features = ["derive"] }
+clap = { version = "4.5.29", features = ["derive"] }
 clap_complete = "4.5.44"
 clap_mangen = "0.2.26"
 
