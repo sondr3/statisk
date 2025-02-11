@@ -27,7 +27,8 @@ runs:
 
         curl -L -o statisk.tar.gz "$URL"
         tar xzf statisk.tar.gz
+        sudo mv statisk /usr/local/bin
 
     - name: Run Statisk
       shell: bash
-      run: ./statisk build ${{ inputs.dir }}
+      run: statisk build ${{ inputs.dir }}
