@@ -62,19 +62,7 @@ impl Content {
         };
 
         let dir = unprefixed_parent(path, root);
-        let out_path: PathBuf = match kind {
-            ContentType::XML => PathBuf::from(path.file_name().unwrap_or_default()),
-            ContentType::HTML | ContentType::Unknown => match (&dir, &frontmatter.slug) {
-                (None, None) => PathBuf::from("index.html"),
-                (None, Some(slug)) => [slug, "index.html"].into_iter().collect(),
-                (Some(dir), Some(slug)) => [dir, slug, "index.html"].into_iter().collect(),
-                (Some(dir), None) => [dir, "index.html"].into_iter().collect(),
-            },
-            ContentType::Jotdown => match &frontmatter.slug {
-                Some(slug) => [slug, "index.html"].into_iter().collect(),
-                None => [stem, "index.html"].into_iter().collect(),
-            },
-        };
+        let out_path = out_path(kind, path, dir.as_ref(), stem, &frontmatter);
 
         let url = frontmatter.url(
             &out_path
@@ -113,6 +101,22 @@ impl Content {
         matches!(self.kind, ContentType::Jotdown | ContentType::HTML)
     }
 
+    pub fn context(&self, context: &SContext) -> Result<Value> {
+        let content = match self.kind {
+            ContentType::Jotdown => render_jotdown(&self.content)?,
+            _ => self.content.clone(),
+        };
+        let frontmatter_context = self.frontmatter.to_context();
+
+        Ok(context! {
+            ..frontmatter_context,
+            ..context! {
+                content => content,
+                canonical_url => context.config.url.join(&self.url)?,
+            }
+        })
+    }
+
     fn layout(&self) -> TemplatePath {
         match &self.frontmatter.layout {
             Some(layout) => TemplatePath(None, layout.to_string()),
@@ -137,20 +141,36 @@ impl Content {
         let template = env.template_from_str(&self.content)?;
         template.render(context).context("Could not render")
     }
+}
 
-    pub fn context(&self, context: &SContext) -> Result<Value> {
-        let content = match self.kind {
-            ContentType::Jotdown => render_jotdown(&self.content)?,
-            _ => self.content.clone(),
-        };
-        let frontmatter_context = self.frontmatter.to_context();
-
-        Ok(context! {
-            ..frontmatter_context,
-            ..context! {
-                content => content,
-                canonical_url => context.config.url.join(&self.url)?,
+fn out_path(
+    kind: ContentType,
+    path: &Path,
+    dir: Option<&String>,
+    stem: &str,
+    frontmatter: &Frontmatter,
+) -> PathBuf {
+    match kind {
+        ContentType::XML => PathBuf::from(path.file_name().unwrap_or_default()),
+        ContentType::HTML | ContentType::Unknown => {
+            // First check if this is a special page (like 404.html)
+            if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
+                if filename == "404.html" || filename == "500.html" {
+                    return PathBuf::from(filename);
+                }
             }
-        })
+
+            // Then handle regular pages
+            match (dir, &frontmatter.slug) {
+                (None, None) => PathBuf::from("index.html"),
+                (None, Some(slug)) => [slug, "index.html"].into_iter().collect(),
+                (Some(dir), Some(slug)) => [dir, slug, "index.html"].into_iter().collect(),
+                (Some(dir), None) => [dir, "index.html"].into_iter().collect(),
+            }
+        }
+        ContentType::Jotdown => match &frontmatter.slug {
+            Some(slug) => [slug, "index.html"].into_iter().collect(),
+            None => [stem, "index.html"].into_iter().collect(),
+        },
     }
 }
