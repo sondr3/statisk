@@ -1,3 +1,28 @@
+## v0.2.1
+
+> 2025-02-14
+
+## Summary
+
+Bug fixes and version bumps. Now handles 404 and 500 pages explicitly, silences
+WebSocket disconnect warnings and a major refactoring of the build pipeline.
+
+### Commits
+
+- [[`6072647`](https://github.com/sondr3/statisk/commit/6072647)] Handle 404/500 pages being included in sitemap
+- [[`de48f40`](https://github.com/sondr3/statisk/commit/de48f40)] Fix some clippy lints
+- [[`e9985f6`](https://github.com/sondr3/statisk/commit/e9985f6)] Handle 404 pages explicitly when building out_path
+- [[`a16f762`](https://github.com/sondr3/statisk/commit/a16f762)] Silence WebSocket warnings for disconnected clients
+- [[`34f2ad9`](https://github.com/sondr3/statisk/commit/34f2ad9)] Refactor whole context building and rendering pipeline
+- [[`ecffc4b`](https://github.com/sondr3/statisk/commit/ecffc4b)] Bump jiff to 0.2
+- [[`762c96d`](https://github.com/sondr3/statisk/commit/762c96d)] Use filename, not file stem in pages map
+- [[`cfd6080`](https://github.com/sondr3/statisk/commit/cfd6080)] Move statisk binary to /usr/local/bin
+- [[`446e3e3`](https://github.com/sondr3/statisk/commit/446e3e3)] Don't compile with lto=fat, IT IS SO SLOW
+- [[`4dfa8b0`](https://github.com/sondr3/statisk/commit/4dfa8b0)] Correctly build page context too
+- [[`7a13b75`](https://github.com/sondr3/statisk/commit/7a13b75)] Support XSL files in the template directory
+- [[`c7d17e1`](https://github.com/sondr3/statisk/commit/c7d17e1)] Run action for example
+- [[`ff54312`](https://github.com/sondr3/statisk/commit/ff54312)] Add GitHub Action
+
 ## 0.2.0
 
 > 2025-02-09
