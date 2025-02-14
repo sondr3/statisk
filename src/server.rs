@@ -60,10 +60,12 @@ async fn handle_socket(mut socket: WebSocket, tx: Sender<Event>, addr: SocketAdd
     let mut rx = tx.subscribe();
 
     while let Ok(event) = rx.recv().await {
-        if let Err(_) = match event {
+        let res = match event {
             Event::Reload => socket.send(Message::Text("reload".into())).await,
             Event::Shutdown => socket.send(Message::Text("shutdown".into())).await,
-        } {
+        };
+
+        if res.is_err() {
             // disconnect client but don't warn about it
             break;
         }

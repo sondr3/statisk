@@ -72,7 +72,7 @@ fn content_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Re
         strip_prefix_paths(&paths.root, path)?
     );
     for page in collect_content(paths)? {
-        context.update_page(page.filename(), page)?
+        context.update_page(page.filename(), page)?;
     }
 
     Ok(())
@@ -84,7 +84,7 @@ fn templates_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> 
         strip_prefix_paths(&paths.root, path)?
     );
     for page in collect_pages(paths)? {
-        context.update_page(page.filename(), page)?
+        context.update_page(page.filename(), page)?;
     }
 
     Ok(())
