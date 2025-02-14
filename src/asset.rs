@@ -21,7 +21,7 @@ pub struct PublicFile {
     pub prefix: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Asset {
     pub source_name: String,
     pub build_path: PathBuf,

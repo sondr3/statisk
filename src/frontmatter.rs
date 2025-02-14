@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::utils::toml_date_jiff_serde;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Frontmatter {
     pub title: String,
     pub subtitle: Option<String>,

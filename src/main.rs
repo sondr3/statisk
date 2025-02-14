@@ -4,7 +4,6 @@ mod cli;
 mod compress;
 mod content;
 mod context;
-mod context_builder;
 mod frontmatter;
 mod jotdown;
 mod minify;
@@ -29,7 +28,7 @@ use tracing_subscriber::{
 use crate::{
     build_mode::BuildMode,
     cli::{print_completion, Cmds, Options},
-    context_builder::ContextBuilder,
+    context::Context,
     paths::Paths,
     render::Renderer,
     statisk_config::StatiskConfig,
@@ -99,12 +98,14 @@ async fn main() -> Result<()> {
 
     let now = Instant::now();
 
+    let (tx, _rx) = broadcast::channel(100);
     let templates = Templates::new(&paths.templates)?;
-    let context = ContextBuilder::new(&paths, mode)?.build(templates, config, mode);
     let renderer = Renderer::new(&paths.out);
+    let mut context = Context::new(templates, config, renderer, mode, tx.clone());
+    context.collect(&paths)?;
 
     if matches!(opts.cmd, None | Some(Cmds::Dev | Cmds::Build)) {
-        renderer.render_context(&context)?;
+        context.build()?;
 
         let done = now.elapsed();
         tracing::info!(
@@ -116,10 +117,8 @@ async fn main() -> Result<()> {
 
     match opts.cmd {
         None | Some(Cmds::Dev) => {
-            let (tx, _rx) = broadcast::channel(100);
             let root = paths.out.clone();
-            let watcher_tx = tx.clone();
-            let watcher = thread::spawn(move || start_live_reload(&paths, &context, &watcher_tx));
+            let watcher = thread::spawn(move || start_live_reload(&paths, &context));
 
             tracing::info!("serving site at http://localhost:3000/...");
             server::create(&root, tx).await?;

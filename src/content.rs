@@ -35,7 +35,7 @@ impl ContentType {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct Content {
     pub source: PathBuf,
     pub out_path: PathBuf,

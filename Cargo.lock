@@ -633,6 +633,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "dashmap"
+version = "6.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5041cc499144891f3790297212f32a74fb938e5136a14943f338ef9e0ae276cf"
+dependencies = [
+ "cfg-if",
+ "crossbeam-utils",
+ "hashbrown 0.14.5",
+ "lock_api",
+ "once_cell",
+ "parking_lot_core",
+ "serde",
+]
+
+[[package]]
 name = "data-encoding"
 version = "2.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1425,7 +1440,7 @@ dependencies = [
  "const-str",
  "cssparser",
  "cssparser-color",
- "dashmap",
+ "dashmap 5.5.3",
  "data-encoding",
  "getrandom",
  "indexmap",
@@ -2501,6 +2516,7 @@ dependencies = [
  "clap",
  "clap_complete",
  "clap_mangen",
+ "dashmap 6.1.0",
  "flate2",
  "insta",
  "jiff",
@@ -2576,7 +2592,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d7133338c3bef796430deced151b0eaa5430710a90e38da19e8e3045e8e36eeb"
 dependencies = [
  "anyhow",
- "dashmap",
+ "dashmap 5.5.3",
  "once_cell",
  "regex",
  "rustc-hash 2.1.1",
@@ -2888,7 +2904,7 @@ version = "9.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26d05cd8942bb58b4676d8189e82942504004555957cb87a563bc4938f2440ab"
 dependencies = [
- "dashmap",
+ "dashmap 5.5.3",
  "indexmap",
  "once_cell",
  "petgraph",

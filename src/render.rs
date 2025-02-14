@@ -3,12 +3,11 @@ use std::path::{Path, PathBuf};
 use anyhow::Result;
 
 use crate::{
-    asset::{Asset, PublicFile},
-    content::{Content, ContentType},
+    asset::PublicFile,
+    content::ContentType,
     context::Context,
     minify::{self},
     utils::{copy_file, write_file},
-    BuildMode,
 };
 
 pub struct Renderer {
@@ -25,13 +24,43 @@ impl Renderer {
     pub fn render_context(&self, context: &Context) -> Result<()> {
         self.create_dest()?;
 
-        copy_public_files(&context.public_files, &self.dest)?;
-        context
-            .assets
-            .values()
-            .try_for_each(|a| write_asset(&self.dest, a))?;
+        self.copy_public_files(&context.public_files)?;
+        self.write_assets(context)?;
+        self.write_content(context)?;
 
-        write_content(&self.dest, context)?;
+        Ok(())
+    }
+
+    pub fn write_content(&self, context: &Context) -> Result<()> {
+        for page in context.pages.iter() {
+            let f = page.value();
+            write_file(
+                &self.dest.join(&f.out_path),
+                match (context.mode.optimize(), f.kind) {
+                    (true, ContentType::HTML) => minify::html(f.render(context.mode, context)?)?,
+                    (true, _) => f.render(context.mode, context)?.into(),
+                    (false, _) => f.render(context.mode, context)?.into(),
+                },
+            )?;
+        }
+
+        Ok(())
+    }
+
+    pub fn copy_public_files(&self, files: &[PublicFile]) -> Result<()> {
+        files
+            .iter()
+            .try_for_each(|f| copy_file(&self.dest, &f.prefix, &f.path))
+    }
+
+    pub fn write_assets(&self, context: &Context) -> Result<()> {
+        for asset in context.assets.iter() {
+            let asset = asset.value();
+            write_file(
+                &self.dest.join(asset.build_path.file_name().unwrap()),
+                &asset.content,
+            )?;
+        }
 
         Ok(())
     }
@@ -45,42 +74,4 @@ impl Renderer {
 
         Ok(())
     }
-}
-
-pub fn write_asset(dest: &Path, asset: &Asset) -> Result<()> {
-    write_file(
-        &dest.join(asset.build_path.file_name().unwrap()),
-        &asset.content,
-    )
-}
-
-pub fn write_content(dest: &Path, context: &Context) -> Result<()> {
-    write_content_iter(dest, context.mode, context, context.pages.values())
-}
-
-pub fn write_content_iter<'a, F>(
-    dest: &Path,
-    mode: BuildMode,
-    context: &Context,
-    pages: F,
-) -> Result<()>
-where
-    F: Iterator<Item = &'a Content>,
-{
-    pages.into_iter().try_for_each(|f| {
-        write_file(
-            &dest.join(&f.out_path),
-            match (mode.optimize(), f.kind) {
-                (true, ContentType::HTML) => minify::html(f.render(mode, context)?)?,
-                (true, _) => f.render(mode, context)?.into(),
-                (false, _) => f.render(mode, context)?.into(),
-            },
-        )
-    })
-}
-
-pub fn copy_public_files(files: &[PublicFile], dest: &Path) -> Result<()> {
-    files
-        .iter()
-        .try_for_each(|f| copy_file(dest, &f.prefix, &f.path))
 }

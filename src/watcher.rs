@@ -5,19 +5,16 @@ use anyhow::{Context, Result};
 use notify::{
     event::ModifyKind, Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher,
 };
-use tokio::sync::broadcast::Sender;
 
 use crate::{
     asset::{is_buildable_css_file, Asset},
-    context::Context as AppContext,
-    context_builder::collect_content,
+    context::{collect_content, collect_pages, Context as AppContext},
     paths::Paths,
-    render::{write_asset, write_content_iter},
     utils::find_files,
     BuildMode,
 };
 
-pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate::Event>) {
+pub fn start_live_reload(paths: &Paths, context: &AppContext) {
     thread::scope(|scope| {
         let templates = scope.spawn(|| {
             file_watcher(
@@ -25,7 +22,7 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate:
                 &["html", "xml", "xsl"],
                 |event| {
                     for path in event.paths.iter().collect::<HashSet<_>>() {
-                        content_watch_handler(paths, path, context, tx)?;
+                        templates_watch_handler(paths, path, context)?;
                     }
                     Ok(())
                 },
@@ -35,7 +32,7 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate:
         let css = scope.spawn(|| {
             file_watcher(&paths.css.canonicalize()?, &["css"], |event| {
                 for path in event.paths.iter().collect::<HashSet<_>>() {
-                    css_watch_handler(paths, path, tx)?;
+                    css_watch_handler(paths, path, context)?;
                 }
                 Ok(())
             })
@@ -44,7 +41,7 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate:
         let content = scope.spawn(|| {
             file_watcher(&paths.content.canonicalize()?, &["dj", "toml"], |event| {
                 for path in event.paths.iter().collect::<HashSet<_>>() {
-                    content_watch_handler(paths, path, context, tx)?;
+                    content_watch_handler(paths, path, context)?;
                 }
                 Ok(())
             })
@@ -56,33 +53,39 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext, tx: &Sender<crate:
     });
 }
 
-fn css_watch_handler(paths: &Paths, path: &Path, tx: &Sender<crate::Event>) -> Result<()> {
+fn css_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Result<()> {
     tracing::info!(
         "File(s) {:?} changed, rebuilding CSS",
         strip_prefix_paths(&paths.root, path)?
     );
     for file in find_files(&paths.css, is_buildable_css_file) {
         let css = Asset::build_css(&file, BuildMode::Normal)?;
-        write_asset(&paths.out, &css)?;
+        context.update_asset(css.source_name.clone(), css)?;
     }
 
-    tx.send(crate::Event::Reload)?;
     Ok(())
 }
 
-fn content_watch_handler(
-    paths: &Paths,
-    path: &Path,
-    context: &AppContext,
-    tx: &Sender<crate::Event>,
-) -> Result<()> {
+fn content_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Result<()> {
     tracing::info!(
-        "File(s) {:?} changed, rebuilding site",
+        "Content {:?} changed, rebuilding...",
         strip_prefix_paths(&paths.root, path)?
     );
-    let pages = collect_content(paths)?;
-    write_content_iter(&paths.out, BuildMode::Normal, context, pages.iter())?;
-    tx.send(crate::Event::Reload)?;
+    for page in collect_content(paths)? {
+        context.update_page(page.filename(), page)?
+    }
+
+    Ok(())
+}
+
+fn templates_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Result<()> {
+    tracing::info!(
+        "Template {:?} changed, rebuilding...",
+        strip_prefix_paths(&paths.root, path)?
+    );
+    for page in collect_pages(paths)? {
+        context.update_page(page.filename(), page)?
+    }
 
     Ok(())
 }

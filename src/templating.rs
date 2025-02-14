@@ -56,8 +56,8 @@ pub struct Templates {
 pub fn create_base_context(mode: BuildMode, context: &SContext) -> Value {
     let pages = context
         .pages
-        .values()
-        .filter(|c| c.is_page())
+        .iter()
+        .filter(|c| c.value().is_page())
         .map(|c| c.context(context).unwrap())
         .collect::<Vec<_>>();
 
