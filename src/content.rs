@@ -97,8 +97,8 @@ impl Content {
         )
     }
 
-    pub fn is_page(&self) -> bool {
-        matches!(self.kind, ContentType::Jotdown | ContentType::HTML)
+    pub fn is_public_page(&self) -> bool {
+        matches!(self.kind, ContentType::Jotdown | ContentType::HTML) && !self.is_special_page()
     }
 
     pub fn context(&self, context: &SContext) -> Result<Value> {
@@ -115,6 +115,10 @@ impl Content {
                 canonical_url => context.config.url.join(&self.url)?,
             }
         })
+    }
+
+    fn is_special_page(&self) -> bool {
+        self.out_path == PathBuf::from("404.html") || self.out_path == PathBuf::from("500.html")
     }
 
     fn layout(&self) -> TemplatePath {

@@ -57,7 +57,7 @@ pub fn create_base_context(mode: BuildMode, context: &SContext) -> Value {
     let pages = context
         .pages
         .iter()
-        .filter(|c| c.value().is_page())
+        .filter(|c| c.value().is_public_page())
         .map(|c| c.context(context).unwrap())
         .collect::<Vec<_>>();
 
