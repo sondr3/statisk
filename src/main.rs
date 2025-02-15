@@ -135,7 +135,7 @@ async fn main() -> Result<()> {
         }
         Some(Cmds::Serve) => {
             tracing::info!("serving site at http://localhost:3000/...");
-            server::create(dbg!(&paths.out), tx).await?;
+            server::create(&paths.out, tx).await?;
         }
         Some(Cmds::Completion { .. }) => unreachable!(),
     }
