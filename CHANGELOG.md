@@ -1,3 +1,18 @@
+## v0.2.3
+
+> 2025-02-15
+
+## Summary
+
+Fix `statisk serve` deleting the `_dist` folder. Whoops.
+
+### Commits
+
+- [[`c8a6005`](https://github.com/sondr3/statisk/commit/c8a6005)] Minor tweaks to README
+- [[`17d0a33`](https://github.com/sondr3/statisk/commit/17d0a33)] Also support macOS for GitHub Action
+- [[`dbed0d4`](https://github.com/sondr3/statisk/commit/dbed0d4)] Only remove dist folder when building
+- [[`e131494`](https://github.com/sondr3/statisk/commit/e131494)] Remove Windows from CI
+
 ## v0.2.2
 
 > 2025-02-15
@@ -8,7 +23,7 @@ HTML minification stopped working, this is now fixed.
 
 ### Commits
 
-- [[`8e4bd70`](https://github.com/sondr3/statisk)] Fix SWC HTML minification
+- [[`8e4bd70`](https://github.com/sondr3/statisk/commit/8e4bd70)] Fix SWC HTML minification
 
 ## v0.2.1
 
