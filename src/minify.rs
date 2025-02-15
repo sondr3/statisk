@@ -16,48 +16,51 @@ use swc_html_minifier::{
 use swc_html_parser::{parse_file_as_document, parser::ParserConfig};
 
 pub fn html(content: String) -> Result<Vec<u8>> {
-    let source_file = SourceFile::new(
-        FileName::Anon.into(),
-        false,
-        FileName::Anon.into(),
-        content,
-        BytePos(1),
-    );
-    let mut errors = vec![];
-    let mut document = parse_file_as_document(&source_file, ParserConfig::default(), &mut errors)
-        .map_err(|err| anyhow!("Could not parse HTML: {:?}", err))?;
+    swc_common::GLOBALS.set(&swc_common::Globals::new(), || {
+        let source_file = SourceFile::new(
+            FileName::Anon.into(),
+            false,
+            FileName::Anon.into(),
+            content,
+            BytePos(1),
+        );
+        let mut errors = vec![];
+        let mut document =
+            parse_file_as_document(&source_file, ParserConfig::default(), &mut errors)
+                .map_err(|err| anyhow!("Could not parse HTML: {:?}", err))?;
 
-    if !errors.is_empty() {
-        eprintln!("{errors:#?}");
-    }
-    minify_document(
-        &mut document,
-        &swc_html_minifier::option::MinifyOptions {
-            force_set_html5_doctype: true,
-            collapse_whitespaces: CollapseWhitespaces::Smart,
-            remove_empty_metadata_elements: false,
-            remove_comments: true,
-            preserve_comments: None,
-            minify_conditional_comments: false,
-            remove_empty_attributes: true,
-            remove_redundant_attributes: RemoveRedundantAttributes::Smart,
-            collapse_boolean_attributes: true,
-            merge_metadata_elements: true,
-            normalize_attributes: true,
-            minify_js: MinifyJsOption::Bool(true),
-            ..Default::default()
-        },
-    );
-    let mut minified_source = String::new();
-    let mut code_generator = CodeGenerator::new(
-        BasicHtmlWriter::new(&mut minified_source, None, BasicHtmlWriterConfig::default()),
-        CodegenConfig {
-            minify: true,
-            ..CodegenConfig::default()
-        },
-    );
-    code_generator.emit(&document)?;
-    Ok(minified_source.into())
+        if !errors.is_empty() {
+            eprintln!("{errors:#?}");
+        }
+        minify_document(
+            &mut document,
+            &swc_html_minifier::option::MinifyOptions {
+                force_set_html5_doctype: true,
+                collapse_whitespaces: CollapseWhitespaces::Smart,
+                remove_empty_metadata_elements: false,
+                remove_comments: true,
+                preserve_comments: None,
+                minify_conditional_comments: false,
+                remove_empty_attributes: true,
+                remove_redundant_attributes: RemoveRedundantAttributes::Smart,
+                collapse_boolean_attributes: true,
+                merge_metadata_elements: true,
+                normalize_attributes: true,
+                minify_js: MinifyJsOption::Bool(true),
+                ..Default::default()
+            },
+        );
+        let mut minified_source = String::new();
+        let mut code_generator = CodeGenerator::new(
+            BasicHtmlWriter::new(&mut minified_source, None, BasicHtmlWriterConfig::default()),
+            CodegenConfig {
+                minify: true,
+                ..CodegenConfig::default()
+            },
+        );
+        code_generator.emit(&document)?;
+        Ok(minified_source.into())
+    })
 }
 
 pub fn css(content: &str) -> Result<String> {
