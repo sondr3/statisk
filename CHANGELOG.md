@@ -1,3 +1,16 @@
+## v0.2.4
+
+> 2025-02-15
+
+## Summary
+
+Fix 404 redirects not working with serve command, remove stray logging.
+
+### Commits
+
+- [[`fa1bfee`](https://github.com/sondr3/statisk)] Fix 404 pointing to the wrong file
+- [[`857d1c4`](https://github.com/sondr3/statisk)] Remove stray dbg!
+
 ## v0.2.3
 
 > 2025-02-15
