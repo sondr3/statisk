@@ -21,13 +21,23 @@ runs:
     - name: Download binary
       shell: bash
       run: |
-        PLATFORM="x86_64-unknown-linux-musl"
+        if [[ "$RUNNER_OS" == "Linux" ]]; then
+          PLATFORM="x86_64-unknown-linux-musl"
+        elif [[ "$RUNNER_OS" == "macOS" ]]; then
+          PLATFORM="x86_64-apple-darwin"
+        else
+          echo "Unsupported platform: $RUNNER_OS"
+          exit 1
+        fi
+
         VERSION_PATH=${{ inputs.version != 'latest' && format('download/{0}', inputs.version) || 'latest/download' }}
         URL="https://github.com/sondr3/statisk/releases/${VERSION_PATH}/statisk-${PLATFORM}.tar.gz"
 
+        echo "Downloading from: $URL"
         curl -L -o statisk.tar.gz "$URL"
         tar xzf statisk.tar.gz
         sudo mv statisk /usr/local/bin
+        rm statisk.tar.gz
 
     - name: Run Statisk
       shell: bash
