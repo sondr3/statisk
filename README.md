@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-    <b>A simple and opinionated static site generator</b>
+    <b>A simple and very opinionated static site generator</b>
 </p>
 
 - **Simple**: Does what I want and not much else
@@ -24,8 +24,8 @@
 
 # What and why
 
-This is a journey every single developer embarks on... writing a tool to build
-a static site generator. This one is mine, and mine only.
+This is a journey every single developer embarks on... writing a static site
+generator. This one is mine, and mine only.
 
 # Installation
 
