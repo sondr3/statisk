@@ -1,5 +1,5 @@
 (() => {
-    const url = "ws://localhost:3000/_ws";
+    const url = "ws://localhost:3001";
     let socket = null;
 
     const connect = () => {
@@ -13,7 +13,7 @@
             switch (event.data.trim()) {
                 case "reload":
                     console.log("Reloading page");
-                    location.reload();
+                    window.location.reload();
                     break;
                 case "shutdown":
                     socket.close(1000, "Waiting for server to restart");

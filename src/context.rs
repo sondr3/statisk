@@ -3,17 +3,17 @@ use std::{path::Path, sync::Arc};
 use ahash::AHashMap;
 use anyhow::{Context as _, Result};
 use dashmap::DashMap;
-use tokio::sync::broadcast::Sender;
 
 use crate::{
     asset::{is_buildable_css_file, Asset, PublicFile},
     content::{Content, ContentType},
+    events::{Event, EventSender},
     paths::{Paths, LIVERELOAD_JS},
     render::Renderer,
     statisk_config::StatiskConfig,
     templating::{is_page, Templates},
     utils::{find_files, is_file},
-    BuildMode, Event,
+    BuildMode,
 };
 
 pub struct Context {
@@ -24,7 +24,7 @@ pub struct Context {
     pub public_files: Vec<PublicFile>,
     pub templates: Templates,
     pub mode: BuildMode,
-    tx: Sender<Event>,
+    events: EventSender,
 }
 
 impl Context {
@@ -33,7 +33,7 @@ impl Context {
         config: StatiskConfig,
         renderer: Renderer,
         mode: BuildMode,
-        sender: Sender<Event>,
+        events: EventSender,
     ) -> Self {
         Self {
             config,
@@ -43,7 +43,7 @@ impl Context {
             public_files: Vec::new(),
             templates,
             mode,
-            tx: sender,
+            events,
         }
     }
 
@@ -91,14 +91,14 @@ impl Context {
     pub fn update_asset(&self, key: String, asset: Asset) -> Result<()> {
         self.assets.insert(key, asset);
         self.renderer.write_assets(self)?;
-        self.tx.send(Event::Reload).context("event failed")?;
+        self.events.tx.send(Event::Reload).context("event failed")?;
         Ok(())
     }
 
     pub fn update_page(&self, key: String, page: Content) -> Result<()> {
         self.pages.insert(key, page);
         self.renderer.write_content(self)?;
-        self.tx.send(Event::Reload).context("event failed")?;
+        self.events.tx.send(Event::Reload).context("event failed")?;
         Ok(())
     }
 }

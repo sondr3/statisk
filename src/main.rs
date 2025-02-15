@@ -4,6 +4,7 @@ mod cli;
 mod compress;
 mod content;
 mod context;
+mod events;
 mod frontmatter;
 mod jotdown;
 mod minify;
@@ -20,7 +21,6 @@ use std::{env::current_dir, fs, thread, time::Instant};
 use anyhow::{bail, Result};
 use clap::{CommandFactory, Parser};
 use time::UtcOffset;
-use tokio::sync::broadcast;
 use tracing_subscriber::{
     fmt::time::OffsetTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
 };
@@ -29,6 +29,7 @@ use crate::{
     build_mode::BuildMode,
     cli::{print_completion, Cmds, Options},
     context::Context,
+    events::EventSender,
     paths::Paths,
     render::Renderer,
     statisk_config::StatiskConfig,
@@ -36,14 +37,7 @@ use crate::{
     watcher::start_live_reload,
 };
 
-#[derive(Debug, Copy, Clone)]
-pub enum Event {
-    Reload,
-    Shutdown,
-}
-
-#[tokio::main]
-async fn main() -> Result<()> {
+fn main() -> Result<()> {
     let opts = Options::parse();
 
     let offset = UtcOffset::current_local_offset().map_or(UtcOffset::UTC, |o| o);
@@ -93,10 +87,10 @@ async fn main() -> Result<()> {
 
     let now = Instant::now();
 
-    let (tx, _rx) = broadcast::channel(100);
+    let events = EventSender::new();
     let templates = Templates::new(&paths.templates)?;
     let renderer = Renderer::new(&paths.out);
-    let mut context = Context::new(templates, config, renderer, mode, tx.clone());
+    let mut context = Context::new(templates, config, renderer, mode, events.clone());
     context.collect(&paths)?;
 
     if matches!(opts.cmd, None | Some(Cmds::Dev | Cmds::Build)) {
@@ -121,7 +115,7 @@ async fn main() -> Result<()> {
             let watcher = thread::spawn(move || start_live_reload(&paths, &context));
 
             tracing::info!("serving site at http://localhost:3000/...");
-            server::create(&root, tx).await?;
+            server::create(&root, events.clone());
 
             watcher.join().unwrap();
         }
@@ -135,7 +129,7 @@ async fn main() -> Result<()> {
         }
         Some(Cmds::Serve) => {
             tracing::info!("serving site at http://localhost:3000/...");
-            server::create(&paths.out, tx).await?;
+            server::create(&paths.out, events.clone());
         }
         Some(Cmds::Completion { .. }) => unreachable!(),
     }
