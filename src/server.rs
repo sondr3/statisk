@@ -40,7 +40,7 @@ fn router(root: &Path, tx: Sender<Event>) -> Router {
         .fallback_service(
             ServeDir::new(root)
                 .append_index_html_on_directories(true)
-                .not_found_service(ServeFile::new(root.join("404/index.html"))),
+                .not_found_service(ServeFile::new(root.join("404.html"))),
         )
         .route("/_ws", get(ws_handler))
         .layer(TraceLayer::new_for_http())
