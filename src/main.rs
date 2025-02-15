@@ -69,11 +69,6 @@ async fn main() -> Result<()> {
     };
 
     let paths = Paths::new(&root);
-    if paths.out.exists() {
-        tracing::debug!("Removing out directory");
-        fs::remove_dir_all(&paths.out)?;
-    }
-
     let config = match StatiskConfig::from_path(&paths.root.join("statisk.toml"), mode) {
         Ok(config) => config,
         Err(err) => bail!("could not read config: {:?}", err),
@@ -105,6 +100,11 @@ async fn main() -> Result<()> {
     context.collect(&paths)?;
 
     if matches!(opts.cmd, None | Some(Cmds::Dev | Cmds::Build)) {
+        if paths.out.exists() {
+            tracing::debug!("Removing out directory");
+            fs::remove_dir_all(&paths.out)?;
+        }
+
         context.build()?;
 
         let done = now.elapsed();
@@ -135,8 +135,7 @@ async fn main() -> Result<()> {
         }
         Some(Cmds::Serve) => {
             tracing::info!("serving site at http://localhost:3000/...");
-            let (tx, _) = broadcast::channel(100);
-            server::create(&paths.out, tx).await?;
+            server::create(dbg!(&paths.out), tx).await?;
         }
         Some(Cmds::Completion { .. }) => unreachable!(),
     }
