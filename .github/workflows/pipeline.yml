@@ -3,7 +3,7 @@ name: pipeline
 on: [ push, pull_request ]
 
 jobs:
-  docs:
+  action:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +37,9 @@ jobs:
 
       - name: clippy
         run: cargo clippy -- -D warnings
+
+      - name: builds docs
+        run: cargo run -- build example
 
   cargo_publish:
     if: startsWith(github.ref, 'refs/tags/v')
