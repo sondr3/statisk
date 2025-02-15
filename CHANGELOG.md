@@ -1,3 +1,15 @@
+## v0.2.2
+
+> 2025-02-15
+
+## Summary
+
+HTML minification stopped working, this is now fixed.
+
+### Commits
+
+- [[`8e4bd70`](https://github.com/sondr3/statisk)] Fix SWC HTML minification
+
 ## v0.2.1
 
 > 2025-02-14
