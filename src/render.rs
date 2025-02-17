@@ -37,7 +37,7 @@ impl Renderer {
             write_file(
                 &self.dest.join(&f.out_path),
                 match (context.mode.optimize(), f.kind) {
-                    (true, ContentType::HTML) => minify::html(f.render(context.mode, context)?)?,
+                    (true, ContentType::HTML) => minify::html(&f.render(context.mode, context)?)?,
                     (true, _) => f.render(context.mode, context)?.into(),
                     (false, _) => f.render(context.mode, context)?.into(),
                 },

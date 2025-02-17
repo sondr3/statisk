@@ -64,7 +64,7 @@ pub fn create_base_context(mode: BuildMode, context: &SContext) -> Value {
     context! {
         mode => mode,
         is_dev => mode.normal(),
-        assets => context.assets,
+        assets => *context.assets,
         config => context.config,
         pages => pages
     }

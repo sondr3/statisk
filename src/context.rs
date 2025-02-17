@@ -5,7 +5,7 @@ use anyhow::{Context as _, Result};
 use dashmap::DashMap;
 
 use crate::{
-    asset::{is_buildable_css_file, Asset, PublicFile},
+    asset::{is_buildable_css_file, is_js, Asset, PublicFile},
     content::{Content, ContentType},
     events::{Event, EventSender},
     paths::{Paths, LIVERELOAD_JS},
@@ -68,7 +68,7 @@ impl Context {
         for asset in collect_css(paths, self.mode)? {
             self.assets.insert(asset.source_name.clone(), asset);
         }
-        for asset in collect_js(paths)? {
+        for asset in collect_js(paths, self.mode)? {
             self.assets.insert(asset.source_name.clone(), asset);
         }
 
@@ -109,9 +109,9 @@ fn collect_css(paths: &Paths, mode: BuildMode) -> Result<Vec<Asset>> {
         .collect()
 }
 
-fn collect_js(paths: &Paths) -> Result<Vec<Asset>> {
-    find_files(&paths.js, is_file)
-        .map(|f| Asset::from_path(&f))
+fn collect_js(paths: &Paths, mode: BuildMode) -> Result<Vec<Asset>> {
+    find_files(&paths.js, is_js)
+        .map(|f| Asset::build_js(&f, mode))
         .collect()
 }
 

@@ -7,7 +7,7 @@ use notify::{
 };
 
 use crate::{
-    asset::{is_buildable_css_file, Asset},
+    asset::{is_buildable_css_file, is_js, Asset},
     context::{collect_content, collect_pages, Context as AppContext},
     paths::Paths,
     utils::find_files,
@@ -38,6 +38,15 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext) {
             })
         });
 
+        let js = scope.spawn(|| {
+            file_watcher(&paths.js.canonicalize()?, &["js", "cjs"], |event| {
+                for path in event.paths.iter().collect::<HashSet<_>>() {
+                    js_watch_handler(paths, path, context)?;
+                }
+                Ok(())
+            })
+        });
+
         let content = scope.spawn(|| {
             file_watcher(&paths.content.canonicalize()?, &["dj", "toml"], |event| {
                 for path in event.paths.iter().collect::<HashSet<_>>() {
@@ -48,6 +57,7 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext) {
         });
 
         css.join().unwrap().unwrap();
+        js.join().unwrap().unwrap();
         content.join().unwrap().unwrap();
         templates.join().unwrap().unwrap();
     });
@@ -61,6 +71,19 @@ fn css_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Result
     for file in find_files(&paths.css, is_buildable_css_file) {
         let css = Asset::build_css(&file, BuildMode::Normal)?;
         context.update_asset(css.source_name.clone(), css)?;
+    }
+
+    Ok(())
+}
+
+fn js_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Result<()> {
+    tracing::info!(
+        "File(s) {:?} changed, rebuilding JS",
+        strip_prefix_paths(&paths.root, path)?
+    );
+    for file in find_files(&paths.js, is_js) {
+        let js = Asset::build_js(&file, BuildMode::Normal)?;
+        context.update_asset(js.source_name.clone(), js)?;
     }
 
     Ok(())

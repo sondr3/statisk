@@ -1,4 +1,7 @@
-use std::path::{Path, PathBuf};
+use std::{
+    fs::read_to_string,
+    path::{Path, PathBuf},
+};
 
 use anyhow::Result;
 use lightningcss::{
@@ -6,6 +9,7 @@ use lightningcss::{
     printer::PrinterOptions,
     stylesheet::ParserOptions,
 };
+use oxc_span::SourceType;
 use serde::Serialize;
 use walkdir::DirEntry;
 
@@ -29,8 +33,8 @@ pub struct Asset {
 }
 
 impl Asset {
-    pub fn from_path(path: &Path) -> Result<Self> {
-        let content = std::fs::read_to_string(path)?;
+    pub fn _from_path(path: &Path) -> Result<Self> {
+        let content = read_to_string(path)?;
         let filename = filename(path);
 
         Ok(Self {
@@ -63,6 +67,36 @@ impl Asset {
             },
         })
     }
+
+    pub fn build_js(path: &Path, mode: BuildMode) -> Result<Self> {
+        let source = read_to_string(path)?;
+        let source_name = path
+            .file_name()
+            .map(|f| f.to_string_lossy().to_string())
+            .unwrap();
+
+        let ext = SourceType::from_path(path)?;
+
+        Ok(match mode {
+            BuildMode::Optimized => Self {
+                source_name,
+                build_path: digest_filename(path, &source),
+                content: minify::js(&source, Some(ext)),
+            },
+            BuildMode::Normal => Self {
+                source_name,
+                build_path: path.to_owned(),
+                content: source,
+            },
+        })
+    }
+}
+
+pub fn is_js(entry: &DirEntry) -> bool {
+    entry
+        .path()
+        .extension()
+        .is_some_and(|e| ["js", "mjs", "cjs"].contains(&e.to_string_lossy().as_ref()))
 }
 
 pub fn is_buildable_css_file(entry: &DirEntry) -> bool {

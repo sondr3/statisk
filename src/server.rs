@@ -21,11 +21,11 @@ use crate::{
 pub fn create(root: &Path, events: EventSender) {
     thread::scope(|scope| {
         let server = scope.spawn(|| create_http_server(root).unwrap());
-        let websocket = scope.spawn(|| create_websocket_server(events).unwrap());
+        let websocket = scope.spawn(|| create_websocket_server(&events).unwrap());
 
         server.join().unwrap();
         websocket.join().unwrap();
-    })
+    });
 }
 
 fn create_http_server(root: &Path) -> Result<()> {
@@ -38,7 +38,7 @@ fn create_http_server(root: &Path) -> Result<()> {
         .context("failed to start server")
 }
 
-fn create_websocket_server(events: EventSender) -> Result<()> {
+fn create_websocket_server(events: &EventSender) -> Result<()> {
     let server = NotificationServer::new(events.rx.clone());
     server.start()
 }
@@ -70,12 +70,11 @@ impl NotificationServer {
                             Event::Reload => Message::Text("reload".into()),
                         };
 
-                        match websocket.send(message) {
-                            Ok(_) => true,
-                            Err(_) => {
-                                let _ = websocket.close(None);
-                                false
-                            }
+                        if let Ok(()) = websocket.send(message) {
+                            true
+                        } else {
+                            let _ = websocket.close(None);
+                            false
                         }
                     });
                 }

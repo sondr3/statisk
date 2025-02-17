@@ -29,6 +29,12 @@ minijinja = { version = "2.7.0", features = ["loader", "speedups", "preserve_ord
 minijinja-autoreload = "2.7.0"
 minijinja-contrib = { version = "2.7.0", features = ["datetime", "timezone", "rand", "wordcount", "wordwrap", "unicode_wordwrap"] }
 new_mime_guess = "4.0.4"
+oxc_minifier = "0.51.0"
+oxc_allocator = "0.51.0"
+oxc_codegen = "0.51.0"
+oxc_mangler = "0.51.0"
+oxc_parser = "0.51.0"
+oxc_span = "0.51.0"
 notify = "8.0.0"
 serde = { version = "1.0.217", features = ["derive"] }
 sha1_smol = { version = "1.0.1", features = ["std"] }
