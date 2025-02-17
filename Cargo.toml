@@ -32,10 +32,7 @@ new_mime_guess = "4.0.4"
 notify = "8.0.0"
 serde = { version = "1.0.217", features = ["derive"] }
 sha1_smol = { version = "1.0.1", features = ["std"] }
-swc_common = "6.1.0"
-swc_html_codegen = "6.0.0"
-swc_html_minifier = "10.0.0"
-swc_html_parser = "6.0.0"
+simple-minify-html = { version = "0.16.0", features = ["css", "js"] }
 time = { version = "0.3.37", features = ["serde-human-readable", "local-offset"] }
 toml = "0.8.20"
 tracing = "0.1.41"
