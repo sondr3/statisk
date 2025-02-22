@@ -70,7 +70,7 @@ impl NotificationServer {
                             Event::Reload => Message::Text("reload".into()),
                         };
 
-                        if let Ok(()) = websocket.send(message) {
+                        if websocket.send(message).is_ok() {
                             true
                         } else {
                             let _ = websocket.close(None);
