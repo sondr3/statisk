@@ -9,7 +9,7 @@ repository = "https://github.com/sondr3/statisk"
 build = "build.rs"
 name = "statisk"
 version = "0.2.4"
-edition = "2021"
+edition = "2024"
 
 [dependencies]
 ahash = "0.8.11"

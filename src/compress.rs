@@ -1,8 +1,8 @@
 use std::{io::prelude::*, path::Path};
 
 use anyhow::{Context, Result};
-use brotli::{enc::BrotliEncoderParams, CompressorWriter};
-use flate2::{write::GzEncoder, Compression};
+use brotli::{CompressorWriter, enc::BrotliEncoderParams};
+use flate2::{Compression, write::GzEncoder};
 use walkdir::DirEntry;
 
 use crate::utils::{append_extension, find_files};

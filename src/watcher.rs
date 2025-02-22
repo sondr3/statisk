@@ -3,15 +3,15 @@ use std::{path::Path, thread};
 use ahash::HashSet;
 use anyhow::{Context, Result};
 use notify::{
-    event::ModifyKind, Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher,
+    Config, Event, EventKind, RecommendedWatcher, RecursiveMode, Watcher, event::ModifyKind,
 };
 
 use crate::{
-    asset::{is_buildable_css_file, is_js, Asset},
-    context::{collect_content, collect_pages, Context as AppContext},
+    BuildMode,
+    asset::{Asset, is_buildable_css_file, is_js},
+    context::{Context as AppContext, collect_content, collect_pages},
     paths::Paths,
     utils::find_files,
-    BuildMode,
 };
 
 pub fn start_live_reload(paths: &Paths, context: &AppContext) {

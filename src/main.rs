@@ -18,16 +18,16 @@ mod watcher;
 
 use std::{env::current_dir, fs, thread, time::Instant};
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use clap::{CommandFactory, Parser};
 use time::UtcOffset;
 use tracing_subscriber::{
-    fmt::time::OffsetTime, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter,
+    EnvFilter, fmt::time::OffsetTime, layer::SubscriberExt, util::SubscriberInitExt,
 };
 
 use crate::{
     build_mode::BuildMode,
-    cli::{print_completion, Cmds, Options},
+    cli::{Cmds, Options, print_completion},
     context::Context,
     events::EventSender,
     paths::Paths,

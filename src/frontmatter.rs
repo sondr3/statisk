@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use jiff::civil::Date;
-use minijinja::{context, Value};
+use minijinja::{Value, context};
 use serde::{Deserialize, Serialize};
 
 use crate::utils::toml_date_jiff_serde;

@@ -47,7 +47,7 @@ pub fn is_visible(entry: &DirEntry) -> bool {
         .is_some_and(|s| s.starts_with('.'))
 }
 
-pub fn find_files<F>(directory: &Path, filter_files: F) -> impl Iterator<Item = PathBuf>
+pub fn find_files<F>(directory: &Path, filter_files: F) -> impl Iterator<Item = PathBuf> + use<F>
 where
     F: Fn(&DirEntry) -> bool,
 {

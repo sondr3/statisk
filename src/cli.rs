@@ -1,7 +1,7 @@
 use std::{io, path::PathBuf};
 
 use clap::{Command, Parser, Subcommand, ValueHint};
-use clap_complete::{generate, Generator, Shell};
+use clap_complete::{Generator, Shell, generate};
 
 #[derive(Debug, Parser)]
 #[command(version, about, author)]
@@ -33,6 +33,11 @@ pub enum Cmds {
     },
 }
 
-pub fn print_completion<G: Generator>(gen: G, app: &mut Command) {
-    generate(gen, app, app.get_name().to_string(), &mut io::stdout());
+pub fn print_completion<G: Generator>(generator: G, app: &mut Command) {
+    generate(
+        generator,
+        app,
+        app.get_name().to_string(),
+        &mut io::stdout(),
+    );
 }

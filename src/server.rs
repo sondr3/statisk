@@ -10,8 +10,8 @@ use std::{
 use anyhow::{Context, Result};
 use astra::{Body, ConnectionInfo, Request, Response, ResponseBuilder, Server, Service};
 use flume::Receiver;
-use http::{header::CONTENT_TYPE, method::Method, StatusCode};
-use tungstenite::{accept, Message, WebSocket};
+use http::{StatusCode, header::CONTENT_TYPE, method::Method};
+use tungstenite::{Message, WebSocket, accept};
 
 use crate::{
     events::{Event, EventSender},

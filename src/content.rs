@@ -1,16 +1,16 @@
 use std::path::{Path, PathBuf};
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{Context, Result, anyhow, bail};
 use minijinja::{context, value::Value};
 use serde::Serialize;
 
 use crate::{
+    BuildMode,
     context::Context as SContext,
     frontmatter::Frontmatter,
     jotdown::render_jotdown,
-    templating::{create_base_context, TemplatePath},
+    templating::{TemplatePath, create_base_context},
     utils::{split_frontmatter, unprefixed_parent},
-    BuildMode,
 };
 
 #[allow(clippy::upper_case_acronyms)]

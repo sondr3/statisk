@@ -1,8 +1,8 @@
 use std::{fs::read_to_string, path::Path};
 
 use ahash::AHashMap;
-use anyhow::{anyhow, Context, Result};
-use minijinja::{context, path_loader, Environment, State, Value};
+use anyhow::{Context, Result, anyhow};
+use minijinja::{Environment, State, Value, context, path_loader};
 use minijinja_autoreload::AutoReloader;
 use minijinja_contrib::add_to_environment;
 

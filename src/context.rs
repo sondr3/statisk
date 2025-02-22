@@ -5,15 +5,15 @@ use anyhow::{Context as _, Result};
 use dashmap::DashMap;
 
 use crate::{
-    asset::{is_buildable_css_file, is_js, Asset, PublicFile},
+    BuildMode,
+    asset::{Asset, PublicFile, is_buildable_css_file, is_js},
     content::{Content, ContentType},
     events::{Event, EventSender},
-    paths::{Paths, LIVERELOAD_JS},
+    paths::{LIVERELOAD_JS, Paths},
     render::Renderer,
     statisk_config::StatiskConfig,
-    templating::{is_page, Templates},
+    templating::{Templates, is_page},
     utils::{find_files, is_file},
-    BuildMode,
 };
 
 pub struct Context {
