@@ -31,7 +31,7 @@ pub fn js(content: &str, kind: Option<SourceType>) -> String {
             minify: true,
             ..CodegenOptions::default()
         })
-        .with_symbol_table(ret.symbol_table)
+        .with_scoping(ret.scoping)
         .build(&program)
         .code;
 
