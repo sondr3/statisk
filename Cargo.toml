@@ -46,6 +46,8 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter", "time"] }
 tungstenite = "0.26.2"
 url = { version = "2.5.4", features = ["serde"] }
 walkdir = "2.5.0"
+typst = { version = "0.13.1", features = [] }
+typst-html = "0.13.1"
 
 [dev-dependencies]
 insta = { version = "1.42.2", features = ["toml"] }

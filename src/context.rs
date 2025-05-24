@@ -117,7 +117,7 @@ fn collect_js(paths: &Paths, mode: BuildMode) -> Result<Vec<Asset>> {
 
 pub fn collect_content(paths: &Paths) -> Result<Vec<Content>> {
     find_files(&paths.content, is_file)
-        .map(|f| Content::from_path(&f, &paths.content, ContentType::Jotdown))
+        .map(|f| Content::from_path(&f, &paths.content, ContentType::from_ext(&f)?))
         .collect()
 }
 

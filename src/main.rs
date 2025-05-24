@@ -13,6 +13,7 @@ mod render;
 mod server;
 mod statisk_config;
 mod templating;
+mod typst;
 mod utils;
 mod watcher;
 

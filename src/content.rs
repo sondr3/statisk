@@ -10,6 +10,7 @@ use crate::{
     frontmatter::Frontmatter,
     jotdown::render_jotdown,
     templating::{TemplatePath, create_base_context},
+    typst::render_typst,
     utils::{split_frontmatter, unprefixed_parent},
 };
 
@@ -18,8 +19,9 @@ use crate::{
 pub enum ContentType {
     HTML,
     XML,
-    Unknown,
     Jotdown,
+    Typst,
+    Unknown,
 }
 
 impl ContentType {
@@ -29,6 +31,8 @@ impl ContentType {
             Some(kind) => match kind.to_string_lossy().to_string().as_ref() {
                 "xml" | "xsl" => Ok(ContentType::XML),
                 "html" => Ok(ContentType::HTML),
+                "typ" => Ok(ContentType::Typst),
+                "dj" => Ok(ContentType::Jotdown),
                 _ => Ok(ContentType::Unknown),
             },
         }
@@ -85,7 +89,7 @@ impl Content {
     pub fn render(&self, mode: BuildMode, context: &SContext) -> Result<String> {
         match self.kind {
             ContentType::HTML | ContentType::XML => self.render_template(mode, context),
-            ContentType::Jotdown => self.render_jotdown(mode, context),
+            ContentType::Jotdown | ContentType::Typst => self.render_content(mode, context),
             ContentType::Unknown => bail!("Cannot render unknown files"),
         }
     }
@@ -104,6 +108,7 @@ impl Content {
     pub fn context(&self, context: &SContext) -> Result<Value> {
         let content = match self.kind {
             ContentType::Jotdown => render_jotdown(&self.content)?,
+            ContentType::Typst => render_typst(&self.content)?,
             _ => self.content.clone(),
         };
         let frontmatter_context = self.frontmatter.to_context();
@@ -128,7 +133,7 @@ impl Content {
         }
     }
 
-    fn render_jotdown(&self, mode: BuildMode, app_context: &SContext) -> Result<String> {
+    fn render_content(&self, mode: BuildMode, app_context: &SContext) -> Result<String> {
         let base_context = create_base_context(mode, app_context);
         let context = self.context(app_context)?;
         let context = context! { ..base_context, ..context };
@@ -172,7 +177,7 @@ fn out_path(
                 (Some(dir), None) => [dir, "index.html"].into_iter().collect(),
             }
         }
-        ContentType::Jotdown => match &frontmatter.slug {
+        ContentType::Jotdown | ContentType::Typst => match &frontmatter.slug {
             Some(slug) => [slug, "index.html"].into_iter().collect(),
             None => [stem, "index.html"].into_iter().collect(),
         },
