@@ -26,16 +26,14 @@ pub fn js(content: &str, kind: Option<SourceType>) -> String {
         compress: Some(CompressOptions::default()),
     };
     let ret = Minifier::new(options).build(&allocator, &mut program);
-    let res = CodeGenerator::new()
+    CodeGenerator::new()
         .with_options(CodegenOptions {
             minify: true,
             ..CodegenOptions::default()
         })
         .with_scoping(ret.scoping)
         .build(&program)
-        .code;
-
-    res
+        .code
 }
 
 pub fn css(content: &str) -> Result<String> {
