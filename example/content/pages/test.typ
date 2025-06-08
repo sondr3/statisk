@@ -3,6 +3,18 @@ title = "Test"
 description = "Test page"
 +++
 
+#let page(body) = {
+    html.elem(
+        "html",
+        attrs: (lang: "en"),
+        {
+            html.elem("body", body)
+        }
+    )
+}
+
+#show: page.with()
+
 = Introduction
 
 In this report, we will explore the

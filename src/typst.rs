@@ -122,10 +122,15 @@ pub fn render_typst(input: &str) -> Result<String> {
         Ok(output) => output,
         Err(err) => anyhow::bail!("Failed to compile Typst document: {:?}", err),
     };
+
     let result = match typst_html::html(&output) {
         Ok(res) => res,
         Err(err) => anyhow::bail!("Failed to render Typst document: {:?}", err),
     };
 
+    let start = result.find("<body>").unwrap();
+    let end = result.rfind("</body>").unwrap();
+
+    let result = result[start + 6..end].to_string();
     Ok(result)
 }
