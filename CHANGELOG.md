@@ -1,3 +1,27 @@
+## v0.2.5
+
+> 2025-06-08
+
+## Summary
+
+Version bumps, removal of async for internal development server and fixes for HTML
+minification.
+
+### Commits
+
+- [[`087cdab`](https://github.com/sondr3/statisk/commit/087cdab)] Compress all generated pages, whoops
+- [[`74100d9`](https://github.com/sondr3/statisk/commit/74100d9)] Remove unnecessary HTML content from Typst documents
+- [[`8cf48eb`](https://github.com/sondr3/statisk/commit/8cf48eb)] Bump dependencies
+- [[`c2a6bfb`](https://github.com/sondr3/statisk/commit/c2a6bfb)] Clean up clippy lint
+- [[`ea97d75`](https://github.com/sondr3/statisk/commit/ea97d75)] Add initial support for Typst
+- [[`bd9375d`](https://github.com/sondr3/statisk/commit/bd9375d)] Bump dependencies, fix OXC code change
+- [[`e7d0350`](https://github.com/sondr3/statisk/commit/e7d0350)] Bump to 1.85, edition='2024', fix lints/formatting
+- [[`99bddd6`](https://github.com/sondr3/statisk/commit/99bddd6)] Small tweak of if statement
+- [[`dc4d460`](https://github.com/sondr3/statisk/commit/dc4d460)] Add OXC and support for JS minification
+- [[`8efdb7b`](https://github.com/sondr3/statisk/commit/8efdb7b)] Use simple-minify-html over SWC for HTML minification
+- [[`541c185`](https://github.com/sondr3/statisk/commit/541c185)] Rename actions, check that building docs work
+- [[`b6ae6e1`](https://github.com/sondr3/statisk/commit/b6ae6e1)] Remove axum and tokio, back to simple sync with astra
+
 ## v0.2.4
 
 > 2025-02-15
