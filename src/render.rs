@@ -4,7 +4,6 @@ use anyhow::Result;
 
 use crate::{
     asset::PublicFile,
-    content::ContentType,
     context::Context,
     minify::{self},
     utils::{copy_file, write_file},
@@ -37,8 +36,7 @@ impl Renderer {
             write_file(
                 &self.dest.join(&f.out_path),
                 match (context.mode.optimize(), f.kind) {
-                    (true, ContentType::HTML) => minify::html(&f.render(context.mode, context)?)?,
-                    (true, _) => f.render(context.mode, context)?.into(),
+                    (true, _) => minify::html(&f.render(context.mode, context)?)?,
                     (false, _) => f.render(context.mode, context)?.into(),
                 },
             )?;
