@@ -1,3 +1,16 @@
+## v0.2.6
+
+> 2025-06-09
+
+## Summary
+
+Bug fix for XML minification.
+
+### Commits
+
+- [[`cd37709`](https://github.com/sondr3/statisk)] Don't minify XML, not actually supported
+- [[`a6140d8`](https://github.com/sondr3/statisk)] Make CI manually callable
+
 ## v0.2.5
 
 > 2025-06-08
