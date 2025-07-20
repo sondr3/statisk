@@ -17,6 +17,7 @@ M.config = {
 }
 
 M.paths = {
+    out_dir = "out",
     css = "assets/css"
 }
 

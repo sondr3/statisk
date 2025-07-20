@@ -32,7 +32,7 @@ use crate::{
     cli::{Cmds, Options, print_completion},
     context::Context,
     events::EventSender,
-    lua::lua_context,
+    lua::{LuaStatisk, create_lua_context},
     paths::Paths,
     render::Renderer,
     statisk_config::StatiskConfig,
@@ -71,7 +71,12 @@ fn main() -> Result<()> {
         Err(err) => bail!("could not read config: {:?}", err),
     };
 
-    lua_context(&paths.root.join("statisk.lua"))?;
+    let lua = create_lua_context(mode)?;
+    let statisk = match LuaStatisk::load(&lua, &root.join("statisk.lua")) {
+        Ok(statisk) => statisk,
+        Err(err) => bail!("could not read config: {:?}", err),
+    };
+    dbg!(statisk);
 
     match opts.cmd {
         None | Some(Cmds::Dev) => {

@@ -1,9 +1,10 @@
 use std::fmt::Display;
 
 use clap::ValueEnum;
-use serde::Serialize;
+use mlua::{FromLua, IntoLua, Lua, LuaSerdeExt, Value};
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Copy, Clone, ValueEnum, Serialize)]
+#[derive(Debug, Copy, Clone, ValueEnum, Serialize, Deserialize)]
 pub enum BuildMode {
     Optimized,
     Normal,
@@ -27,5 +28,17 @@ impl BuildMode {
     #[must_use]
     pub const fn normal(self) -> bool {
         matches!(self, Self::Normal)
+    }
+}
+
+impl IntoLua for BuildMode {
+    fn into_lua(self, lua: &Lua) -> mlua::Result<Value> {
+        lua.to_value(&self)
+    }
+}
+
+impl FromLua for BuildMode {
+    fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+        lua.from_value(value)
     }
 }
