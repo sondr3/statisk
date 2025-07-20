@@ -9,8 +9,9 @@ use lightningcss::{
     printer::PrinterOptions,
     stylesheet::ParserOptions,
 };
+use mlua::{FromLua, IntoLua, Lua, LuaSerdeExt, Value};
 use oxc_span::SourceType;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use walkdir::DirEntry;
 
 use crate::{
@@ -25,15 +26,27 @@ pub struct PublicFile {
     pub prefix: String,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Asset {
     pub source_name: String,
     pub build_path: PathBuf,
     pub content: String,
 }
 
+impl IntoLua for Asset {
+    fn into_lua(self, lua: &Lua) -> mlua::Result<Value> {
+        lua.to_value(&self)
+    }
+}
+
+impl FromLua for Asset {
+    fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+        lua.from_value(value)
+    }
+}
+
 impl Asset {
-    pub fn _from_path(path: &Path) -> Result<Self> {
+    pub fn from_path(path: &Path) -> Result<Self> {
         let content = read_to_string(path)?;
         let filename = filename(path);
 

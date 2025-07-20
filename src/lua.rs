@@ -4,17 +4,18 @@ use std::{
 };
 
 use anyhow::Result;
-use mlua::{Table, prelude::*};
+use mlua::{RegistryKey, Table, prelude::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::{build_mode::BuildMode, statisk_config::StatiskConfig};
+use crate::{asset::Asset, build_mode::BuildMode, statisk_config::StatiskConfig};
 
 #[derive(Debug)]
 pub struct LuaStatisk {
     pub mode: BuildMode,
     pub config: StatiskConfig,
     pub paths: PathConfig,
+    pub assets: Vec<Asset>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -73,11 +74,13 @@ impl FromLua for LuaStatisk {
             let mode: BuildMode = table.get("mode")?;
             let config: StatiskConfig = table.get("config")?;
             let paths: PathConfig = table.get("paths")?;
+            let assets: Vec<Asset> = table.get("assets").unwrap_or_else(|_| Vec::new());
 
             let config = LuaStatisk {
                 mode,
                 config,
                 paths,
+                assets,
             };
             Ok(config)
         } else {
@@ -92,6 +95,7 @@ impl IntoLua for LuaStatisk {
         table.set("mode", self.mode)?;
         table.set("config", self.config)?;
         table.set("paths", self.paths)?;
+        table.set("assets", self.assets)?;
 
         Ok(LuaValue::Table(table))
     }
@@ -115,12 +119,25 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
     let package: Table = lua.globals().get("package")?;
     let loaded: Table = package.get("loaded")?;
 
+    let root_key: &'static RegistryKey = Box::leak(Box::new(lua.create_registry_value(root)?));
     let statisk_table = lua.create_table()?;
     statisk_table.set("mode", lua.to_value(&mode)?)?;
+
+    statisk_table.set(
+        "asset",
+        lua.create_function(move |lua, name: PathBuf| {
+            let root: PathBuf = lua.registry_value(root_key)?;
+            let asset = Asset::from_path(root.join(name).as_path())?;
+            Ok(asset)
+        })?,
+    )?;
+
     statisk_table.set(
         "setup",
-        lua.create_function(move |_, config_table: LuaTable| {
+        lua.create_function(move |lua, config_table: LuaTable| {
+            let root: PathBuf = lua.registry_value(root_key)?;
             let config: StatiskConfig = config_table.get("config")?;
+            let assets: Vec<Asset> = config_table.get("assets").unwrap_or_else(|_| Vec::new());
             let mut paths: PathConfig = config_table.get("paths")?;
             paths.with_root(root.clone());
 
@@ -128,9 +145,11 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
                 mode,
                 config,
                 paths,
+                assets,
             })
         })?,
     )?;
+
     loaded.set("statisk", statisk_table)?;
 
     Ok(lua)

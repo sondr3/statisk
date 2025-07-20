@@ -21,4 +21,8 @@ M.paths = {
     css = "css"
 }
 
+M.assets = {
+    statisk.asset("css/styles.css"),
+}
+
 return statisk.setup(M)
