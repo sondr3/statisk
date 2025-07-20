@@ -1,7 +1,7 @@
-use std::{fs::read_to_string, path::Path};
+use std::{collections::HashMap, fs::read_to_string, path::Path};
 
-use ahash::AHashMap;
 use anyhow::Result;
+use mlua::{FromLua, Lua, Table, Value, prelude::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -14,7 +14,7 @@ pub struct StatiskConfig {
     pub description: Option<String>,
     pub author: Option<Author>,
     #[serde(default)]
-    pub extra: AHashMap<String, String>,
+    pub extra: HashMap<String, String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -22,6 +22,18 @@ pub struct Author {
     pub name: String,
     pub description: Option<String>,
     pub contact: Option<String>,
+}
+
+impl FromLua for StatiskConfig {
+    fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
+        lua.from_value(value)
+    }
+}
+
+impl IntoLua for StatiskConfig {
+    fn into_lua(self, lua: &Lua) -> LuaResult<Value> {
+        lua.to_value(&self)
+    }
 }
 
 impl StatiskConfig {
@@ -33,5 +45,14 @@ impl StatiskConfig {
         }
 
         Ok(config)
+    }
+
+    fn create(lua: &Lua) -> mlua::Result<LuaFunction> {
+        lua.create_function(|_, config: StatiskConfig| Ok(config))
+    }
+
+    pub fn create_context(table: &Table, lua: &Lua) -> Result<()> {
+        table.set("config", StatiskConfig::create(lua)?)?;
+        Ok(())
     }
 }

@@ -7,6 +7,7 @@ mod context;
 mod events;
 mod frontmatter;
 mod jotdown;
+mod lua;
 mod minify;
 mod paths;
 mod render;
@@ -31,6 +32,7 @@ use crate::{
     cli::{Cmds, Options, print_completion},
     context::Context,
     events::EventSender,
+    lua::lua_context,
     paths::Paths,
     render::Renderer,
     statisk_config::StatiskConfig,
@@ -68,6 +70,8 @@ fn main() -> Result<()> {
         Ok(config) => config,
         Err(err) => bail!("could not read config: {:?}", err),
     };
+
+    lua_context(&paths.root.join("statisk.lua"))?;
 
     match opts.cmd {
         None | Some(Cmds::Dev) => {

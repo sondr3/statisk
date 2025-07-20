@@ -114,7 +114,7 @@ pub fn render_typst(input: &str) -> Result<String> {
 
     if !warnings.is_empty() {
         for warning in warnings {
-            eprintln!("Warning: {:?}", warning);
+            eprintln!("Warning: {warning:?}");
         }
     }
 
