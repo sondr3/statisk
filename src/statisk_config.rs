@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs::read_to_string, path::Path};
 
 use anyhow::Result;
-use mlua::{FromLua, Lua, Table, Value, prelude::*};
+use mlua::{FromLua, Lua, Value, prelude::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -45,14 +45,5 @@ impl StatiskConfig {
         }
 
         Ok(config)
-    }
-
-    fn create(lua: &Lua) -> mlua::Result<LuaFunction> {
-        lua.create_function(|_, config: StatiskConfig| Ok(config))
-    }
-
-    pub fn create_context(table: &Table, lua: &Lua) -> Result<()> {
-        table.set("config", StatiskConfig::create(lua)?)?;
-        Ok(())
     }
 }
