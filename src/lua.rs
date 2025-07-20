@@ -8,7 +8,9 @@ use mlua::{RegistryKey, Table, prelude::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::{asset::Asset, build_mode::BuildMode, statisk_config::StatiskConfig};
+use crate::{
+    asset::Asset, build_mode::BuildMode, context::LIVERELOAD_JS, statisk_config::StatiskConfig,
+};
 
 #[derive(Debug)]
 pub struct LuaStatisk {
@@ -137,9 +139,18 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
         lua.create_function(move |lua, config_table: LuaTable| {
             let root: PathBuf = lua.registry_value(root_key)?;
             let config: StatiskConfig = config_table.get("config")?;
-            let assets: Vec<Asset> = config_table.get("assets").unwrap_or_else(|_| Vec::new());
+
             let mut paths: PathConfig = config_table.get("paths")?;
             paths.with_root(root.clone());
+
+            let mut assets: Vec<Asset> = config_table.get("assets").unwrap_or_else(|_| Vec::new());
+            if mode.normal() {
+                assets.push(Asset {
+                    source_name: "livereload.js".to_string(),
+                    build_path: paths.out_dir.join(Path::new("livereload.js")),
+                    content: LIVERELOAD_JS.to_string(),
+                })
+            }
 
             Ok(LuaStatisk {
                 mode,
