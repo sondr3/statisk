@@ -10,11 +10,11 @@ use crate::{
     BuildMode,
     asset::{Asset, is_buildable_css_file, is_js},
     context::{Context as AppContext, collect_content, collect_pages},
-    paths::Paths,
+    lua::PathConfig,
     utils::find_files,
 };
 
-pub fn start_live_reload(paths: &Paths, context: &AppContext) {
+pub fn start_live_reload(paths: &PathConfig, context: &AppContext) {
     thread::scope(|scope| {
         let templates = scope.spawn(|| {
             file_watcher(
@@ -63,7 +63,7 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext) {
     });
 }
 
-fn css_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Result<()> {
+fn css_watch_handler(paths: &PathConfig, path: &Path, context: &AppContext) -> Result<()> {
     tracing::info!(
         "File(s) {:?} changed, rebuilding CSS",
         strip_prefix_paths(&paths.root, path)?
@@ -76,7 +76,7 @@ fn css_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Result
     Ok(())
 }
 
-fn js_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Result<()> {
+fn js_watch_handler(paths: &PathConfig, path: &Path, context: &AppContext) -> Result<()> {
     tracing::info!(
         "File(s) {:?} changed, rebuilding JS",
         strip_prefix_paths(&paths.root, path)?
@@ -89,7 +89,7 @@ fn js_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Result<
     Ok(())
 }
 
-fn content_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Result<()> {
+fn content_watch_handler(paths: &PathConfig, path: &Path, context: &AppContext) -> Result<()> {
     tracing::info!(
         "Content {:?} changed, rebuilding...",
         strip_prefix_paths(&paths.root, path)?
@@ -101,7 +101,7 @@ fn content_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Re
     Ok(())
 }
 
-fn templates_watch_handler(paths: &Paths, path: &Path, context: &AppContext) -> Result<()> {
+fn templates_watch_handler(paths: &PathConfig, path: &Path, context: &AppContext) -> Result<()> {
     tracing::info!(
         "Template {:?} changed, rebuilding...",
         strip_prefix_paths(&paths.root, path)?

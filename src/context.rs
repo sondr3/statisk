@@ -9,15 +9,16 @@ use crate::{
     asset::{Asset, PublicFile, is_buildable_css_file, is_js},
     content::{Content, ContentType},
     events::{Event, EventSender},
-    paths::{LIVERELOAD_JS, Paths},
+    lua::{LuaStatisk, PathConfig},
     render::Renderer,
-    statisk_config::StatiskConfig,
     templating::{Templates, is_page},
     utils::{find_files, is_file},
 };
 
+pub const LIVERELOAD_JS: &str = include_str!("livereload.js");
+
 pub struct Context {
-    pub config: StatiskConfig,
+    pub statisk: LuaStatisk,
     renderer: Renderer,
     pub assets: Arc<DashMap<String, Asset>>,
     pub pages: Arc<DashMap<String, Content>>,
@@ -30,13 +31,13 @@ pub struct Context {
 impl Context {
     pub fn new(
         templates: Templates,
-        config: StatiskConfig,
+        statisk: LuaStatisk,
         renderer: Renderer,
         mode: BuildMode,
         events: EventSender,
     ) -> Self {
         Self {
-            config,
+            statisk,
             renderer,
             assets: Arc::new(DashMap::new()),
             pages: Arc::new(DashMap::new()),
@@ -51,7 +52,7 @@ impl Context {
         self.renderer.render_context(self)
     }
 
-    pub fn collect(&mut self, paths: &Paths) -> Result<()> {
+    pub fn collect(&mut self, paths: &PathConfig) -> Result<()> {
         let pages = collect_content(paths)?;
         let mut pages: AHashMap<_, _> = pages.into_iter().map(|p| (p.filename(), p)).collect();
         pages.extend(
@@ -77,7 +78,7 @@ impl Context {
                 "livereload.js".to_string(),
                 Asset {
                     source_name: "livereload.js".to_string(),
-                    build_path: paths.out.join(Path::new("livereload.js")),
+                    build_path: paths.out_dir.join(Path::new("livereload.js")),
                     content: LIVERELOAD_JS.to_string(),
                 },
             );
@@ -103,32 +104,32 @@ impl Context {
     }
 }
 
-fn collect_css(paths: &Paths, mode: BuildMode) -> Result<Vec<Asset>> {
+fn collect_css(paths: &PathConfig, mode: BuildMode) -> Result<Vec<Asset>> {
     find_files(&paths.css, is_buildable_css_file)
         .map(|f| Asset::build_css(&f, mode))
         .collect()
 }
 
-fn collect_js(paths: &Paths, mode: BuildMode) -> Result<Vec<Asset>> {
+fn collect_js(paths: &PathConfig, mode: BuildMode) -> Result<Vec<Asset>> {
     find_files(&paths.js, is_js)
         .map(|f| Asset::build_js(&f, mode))
         .collect()
 }
 
-pub fn collect_content(paths: &Paths) -> Result<Vec<Content>> {
+pub fn collect_content(paths: &PathConfig) -> Result<Vec<Content>> {
     find_files(&paths.content, is_file)
         .map(|f| Content::from_path(&f, &paths.content, ContentType::from_ext(&f)?))
         .collect()
 }
 
-pub fn collect_pages(paths: &Paths) -> Result<Vec<Content>> {
+pub fn collect_pages(paths: &PathConfig) -> Result<Vec<Content>> {
     find_files(&paths.templates, is_file)
         .filter(|f| is_page(f))
         .map(|f| Content::from_path(&f, &paths.templates, ContentType::from_ext(&f)?))
         .collect()
 }
 
-fn collect_public_files(paths: &Paths) -> Vec<PublicFile> {
+fn collect_public_files(paths: &PathConfig) -> Vec<PublicFile> {
     find_files(&paths.public, is_file)
         .map(|f| PublicFile {
             path: f,

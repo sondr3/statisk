@@ -37,13 +37,11 @@ impl Renderer {
             write_file(
                 &self.dest.join(&f.out_path),
                 match (context.mode.optimize(), f.kind) {
-                    (true, ContentType::XML | ContentType::Unknown) => {
-                        f.render(context.mode, context)?.into()
-                    }
+                    (true, ContentType::XML | ContentType::Unknown) => f.render(context)?.into(),
                     (true, ContentType::HTML | ContentType::Typst | ContentType::Jotdown) => {
-                        minify::html(&f.render(context.mode, context)?)?
+                        minify::html(&f.render(context)?)?
                     }
-                    (false, _) => f.render(context.mode, context)?.into(),
+                    (false, _) => f.render(context)?.into(),
                 },
             )?;
         }

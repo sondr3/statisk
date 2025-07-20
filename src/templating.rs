@@ -7,7 +7,6 @@ use minijinja_autoreload::AutoReloader;
 use minijinja_contrib::add_to_environment;
 
 use crate::{
-    build_mode::BuildMode,
     context::Context as SContext,
     utils::{filename, find_files, is_file, unprefixed_parent},
 };
@@ -53,7 +52,7 @@ pub struct Templates {
     pub templates: AHashMap<TemplatePath, Template>,
 }
 
-pub fn create_base_context(mode: BuildMode, context: &SContext) -> Value {
+pub fn create_base_context(context: &SContext) -> Value {
     let pages = context
         .pages
         .iter()
@@ -62,10 +61,10 @@ pub fn create_base_context(mode: BuildMode, context: &SContext) -> Value {
         .collect::<Vec<_>>();
 
     context! {
-        mode => mode,
-        is_dev => mode.normal(),
+        mode => context.mode,
+        is_dev => context.mode.normal(),
         assets => *context.assets,
-        config => context.config,
+        config => context.statisk.config,
         pages => pages
     }
 }
