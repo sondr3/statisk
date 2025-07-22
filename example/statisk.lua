@@ -21,4 +21,11 @@ M.paths = {
     css = "css"
 }
 
+M.outputs = {
+    statisk.file("templates/sitemap.xml"):output("sitemap.xml"):build(),
+    statisk.template("templates/page.html"):filter(function(page)
+        return page.in_category("page")
+    end):build()
+}
+
 return statisk.setup(M)

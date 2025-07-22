@@ -4,7 +4,7 @@ use std::{
 };
 
 use anyhow::Result;
-use mlua::{RegistryKey, Table, prelude::*};
+use mlua::{RegistryKey, Table, UserData, prelude::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -15,6 +15,142 @@ pub struct LuaStatisk {
     pub mode: BuildMode,
     pub config: StatiskConfig,
     pub paths: PathConfig,
+    pub outputs: Vec<LuaOutput>,
+}
+
+#[derive(Debug, Clone)]
+pub enum LuaOutput {
+    File {
+        template: PathBuf,
+        output: PathBuf,
+    },
+    Template {
+        template: PathBuf,
+        filter: LuaFunction,
+        output_pattern: String,
+    },
+}
+
+impl FromLua for LuaOutput {
+    fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
+        if let LuaValue::UserData(ud) = value {
+            if let Ok(output) = ud.borrow::<LuaOutput>() {
+                return Ok(output.clone());
+            }
+        }
+        Err(LuaError::runtime("Expected LuaOutput"))
+    }
+}
+
+impl UserData for LuaOutput {}
+
+#[derive(Debug, Clone)]
+pub struct FileOutputBuilder {
+    template_path: PathBuf,
+    output: Option<PathBuf>,
+}
+
+impl FileOutputBuilder {
+    fn new(template_path: PathBuf) -> Self {
+        Self {
+            template_path,
+            output: None,
+        }
+    }
+
+    fn build(self) -> LuaResult<LuaOutput> {
+        let output = self
+            .output
+            .ok_or_else(|| LuaError::runtime("Template output must have a filter function"))?;
+
+        Ok(LuaOutput::File {
+            template: self.template_path,
+            output,
+        })
+    }
+}
+
+// Builder for template outputs - more complex with chaining methods
+#[derive(Debug, Clone)]
+pub struct TemplateOutputBuilder {
+    template_path: PathBuf,
+    filter_fn: Option<LuaFunction>,
+    output_pattern: String,
+}
+
+impl TemplateOutputBuilder {
+    fn new(template_path: PathBuf) -> Self {
+        Self {
+            template_path,
+            filter_fn: None,
+            output_pattern: "{slug}.html".to_string(),
+        }
+    }
+
+    fn build(self) -> LuaResult<LuaOutput> {
+        let filter_fn = self
+            .filter_fn
+            .ok_or_else(|| LuaError::runtime("Template output must have a filter function"))?;
+
+        Ok(LuaOutput::Template {
+            template: self.template_path,
+            filter: filter_fn,
+            output_pattern: self.output_pattern,
+        })
+    }
+}
+
+impl LuaUserData for FileOutputBuilder {
+    fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
+        methods.add_method_mut("output", |_lua, this, output_path: PathBuf| {
+            this.output = Some(output_path);
+            Ok(this.clone())
+        });
+
+        methods.add_function("build", |_lua, this: FileOutputBuilder| {
+            this.clone().build()
+        });
+    }
+}
+
+impl FromLua for FileOutputBuilder {
+    fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
+        if let LuaValue::UserData(ud) = value {
+            if let Ok(builder) = ud.borrow::<FileOutputBuilder>() {
+                return Ok(builder.clone());
+            }
+        }
+        Err(LuaError::runtime("Expected TemplateOutputBuilder"))
+    }
+}
+
+impl LuaUserData for TemplateOutputBuilder {
+    fn add_methods<M: LuaUserDataMethods<Self>>(methods: &mut M) {
+        methods.add_method_mut("filter", |_lua, this, filter_fn: LuaFunction| {
+            this.filter_fn = Some(filter_fn);
+            Ok(this.clone())
+        });
+
+        methods.add_method_mut("pattern", |_lua, this, pattern: String| {
+            this.output_pattern = pattern;
+            Ok(this.clone())
+        });
+
+        methods.add_function("build", |_lua, this: TemplateOutputBuilder| {
+            this.clone().build()
+        });
+    }
+}
+
+impl FromLua for TemplateOutputBuilder {
+    fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
+        if let LuaValue::UserData(ud) = value {
+            if let Ok(builder) = ud.borrow::<TemplateOutputBuilder>() {
+                return Ok(builder.clone());
+            }
+        }
+        Err(LuaError::runtime("Expected TemplateOutputBuilder"))
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -73,11 +209,13 @@ impl FromLua for LuaStatisk {
             let mode: BuildMode = table.get("mode")?;
             let config: StatiskConfig = table.get("config")?;
             let paths: PathConfig = table.get("paths")?;
+            let outputs: Vec<LuaOutput> = table.get("outputs")?;
 
             let config = LuaStatisk {
                 mode,
                 config,
                 paths,
+                outputs,
             };
             Ok(config)
         } else {
@@ -92,6 +230,7 @@ impl IntoLua for LuaStatisk {
         table.set("mode", self.mode)?;
         table.set("config", self.config)?;
         table.set("paths", self.paths)?;
+        table.set("outputs", self.outputs)?;
 
         Ok(LuaValue::Table(table))
     }
@@ -120,10 +259,31 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
     statisk_table.set("mode", lua.to_value(&mode)?)?;
 
     statisk_table.set(
+        "file",
+        lua.create_function(|lua, template: PathBuf| {
+            let root: PathBuf = lua.registry_value(root_key)?;
+            let file_path = root.join(template);
+            let builder = FileOutputBuilder::new(file_path);
+            lua.create_userdata(builder)
+        })?,
+    )?;
+
+    statisk_table.set(
+        "template",
+        lua.create_function(|lua, template: PathBuf| {
+            let root: PathBuf = lua.registry_value(root_key)?;
+            let file_path = root.join(template);
+            let builder = TemplateOutputBuilder::new(file_path);
+            lua.create_userdata(builder)
+        })?,
+    )?;
+
+    statisk_table.set(
         "setup",
         lua.create_function(move |lua, config_table: LuaTable| {
             let root: PathBuf = lua.registry_value(root_key)?;
             let config: StatiskConfig = config_table.get("config")?;
+            let outputs: Vec<LuaOutput> = config_table.get("outputs")?;
 
             let mut paths: PathConfig = config_table.get("paths")?;
             paths.with_root(root.clone());
@@ -132,6 +292,7 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
                 mode,
                 config,
                 paths,
+                outputs,
             })
         })?,
     )?;

@@ -28,7 +28,7 @@ lightningcss = { version = "1.0.0-alpha.66", default-features = false, features 
 minijinja = { version = "2.10.2", features = ["loader", "speedups", "preserve_order"] }
 minijinja-autoreload = "2.10.2"
 minijinja-contrib = { version = "2.10.2", features = ["datetime", "timezone", "rand", "wordcount", "wordwrap", "unicode_wordwrap"] }
-mlua = { version = "0.11.1", features = ["lua54", "vendored", "serialize", "anyhow"] }
+mlua = { version = "0.11.1", features = ["lua54", "vendored", "serialize", "anyhow", "send"] }
 new_mime_guess = "4.0.4"
 oxc_minifier = "0.72.0"
 oxc_allocator = "0.72.0"
