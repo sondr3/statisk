@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct StatiskConfig {
+    pub out_dir: PathBuf,
     pub template_root: PathBuf,
     pub public_files: PathBuf,
 }
@@ -13,6 +14,7 @@ pub struct StatiskConfig {
 impl Default for StatiskConfig {
     fn default() -> Self {
         StatiskConfig {
+            out_dir: PathBuf::from("_dist"),
             template_root: PathBuf::from("templates"),
             public_files: PathBuf::from("public"),
         }
