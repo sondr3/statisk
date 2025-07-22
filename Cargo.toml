@@ -49,6 +49,7 @@ url = { version = "2.5.4", features = ["serde"] }
 walkdir = "2.5.0"
 typst = { version = "0.13.1", features = [] }
 typst-html = "0.13.1"
+globset = { version = "0.4.16", default-features = false, features = ["serde"] }
 
 [dev-dependencies]
 insta = { version = "1.43.1", features = ["toml"] }
