@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use url::Url;
 
 #[derive(Debug, Deserialize, Serialize)]
-pub struct StatiskConfig {
+pub struct StatiskMeta {
     pub url: Url,
     pub title: Option<String>,
     pub description: Option<String>,
@@ -21,13 +21,13 @@ pub struct Author {
     pub contact: Option<String>,
 }
 
-impl FromLua for StatiskConfig {
+impl FromLua for StatiskMeta {
     fn from_lua(value: Value, lua: &Lua) -> mlua::Result<Self> {
         lua.from_value(value)
     }
 }
 
-impl IntoLua for StatiskConfig {
+impl IntoLua for StatiskMeta {
     fn into_lua(self, lua: &Lua) -> LuaResult<Value> {
         lua.to_value(&self)
     }

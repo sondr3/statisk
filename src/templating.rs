@@ -64,7 +64,7 @@ pub fn create_base_context(context: &SContext) -> Value {
         mode => context.mode,
         is_dev => context.mode.normal(),
         assets => *context.assets,
-        config => context.statisk.config,
+        config => context.statisk.meta,
         pages => pages
     }
 }

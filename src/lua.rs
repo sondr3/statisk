@@ -8,12 +8,12 @@ use mlua::{RegistryKey, Table, UserData, prelude::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::{build_mode::BuildMode, statisk_config::StatiskConfig};
+use crate::{build_mode::BuildMode, meta::StatiskMeta};
 
 #[derive(Debug)]
 pub struct LuaStatisk {
     pub mode: BuildMode,
-    pub config: StatiskConfig,
+    pub meta: StatiskMeta,
     pub paths: PathConfig,
     pub outputs: Vec<LuaOutput>,
 }
@@ -70,7 +70,6 @@ impl FileOutputBuilder {
     }
 }
 
-// Builder for template outputs - more complex with chaining methods
 #[derive(Debug, Clone)]
 pub struct TemplateOutputBuilder {
     template_path: PathBuf,
@@ -207,13 +206,13 @@ impl FromLua for LuaStatisk {
     fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
         if let LuaValue::Table(table) = value {
             let mode: BuildMode = table.get("mode")?;
-            let config: StatiskConfig = table.get("config")?;
+            let meta: StatiskMeta = table.get("meta")?;
             let paths: PathConfig = table.get("paths")?;
             let outputs: Vec<LuaOutput> = table.get("outputs")?;
 
             let config = LuaStatisk {
                 mode,
-                config,
+                meta,
                 paths,
                 outputs,
             };
@@ -228,7 +227,7 @@ impl IntoLua for LuaStatisk {
     fn into_lua(self, lua: &Lua) -> LuaResult<LuaValue> {
         let table = lua.create_table()?;
         table.set("mode", self.mode)?;
-        table.set("config", self.config)?;
+        table.set("meta", self.meta)?;
         table.set("paths", self.paths)?;
         table.set("outputs", self.outputs)?;
 
@@ -244,7 +243,7 @@ impl LuaStatisk {
     pub fn url(&self) -> Url {
         match self.mode {
             BuildMode::Normal => Url::from_str("http://localhost:3000").unwrap(),
-            BuildMode::Optimized => self.config.url.clone(),
+            BuildMode::Optimized => self.meta.url.clone(),
         }
     }
 }
@@ -282,7 +281,7 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
         "setup",
         lua.create_function(move |lua, config_table: LuaTable| {
             let root: PathBuf = lua.registry_value(root_key)?;
-            let config: StatiskConfig = config_table.get("config")?;
+            let meta: StatiskMeta = config_table.get("meta")?;
             let outputs: Vec<LuaOutput> = config_table.get("outputs")?;
 
             let mut paths: PathConfig = config_table.get("paths")?;
@@ -290,7 +289,7 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
 
             Ok(LuaStatisk {
                 mode,
-                config,
+                meta,
                 paths,
                 outputs,
             })
