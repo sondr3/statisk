@@ -2,6 +2,7 @@ mod asset;
 mod build_mode;
 mod cli;
 mod compress;
+mod config;
 mod content;
 mod context;
 mod events;

@@ -1,6 +1,8 @@
 use std::{
+    cell::OnceCell,
     path::{Path, PathBuf},
     str::FromStr,
+    sync::OnceLock,
 };
 
 use anyhow::Result;
@@ -8,12 +10,16 @@ use mlua::{RegistryKey, Table, UserData, prelude::*};
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::{build_mode::BuildMode, meta::StatiskMeta};
+use crate::{build_mode::BuildMode, config::StatiskConfig, meta::StatiskMeta};
+
+static ROOT_KEY: OnceLock<RegistryKey> = OnceLock::new();
 
 #[derive(Debug)]
 pub struct LuaStatisk {
     pub mode: BuildMode,
+    pub root: PathBuf,
     pub meta: StatiskMeta,
+    pub config: StatiskConfig,
     pub paths: PathConfig,
     pub outputs: Vec<LuaOutput>,
 }
@@ -203,16 +209,20 @@ impl PathConfig {
 }
 
 impl FromLua for LuaStatisk {
-    fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
+    fn from_lua(value: LuaValue, lua: &Lua) -> LuaResult<Self> {
         if let LuaValue::Table(table) = value {
             let mode: BuildMode = table.get("mode")?;
+            let root = lua.registry_value(ROOT_KEY.get().unwrap())?;
             let meta: StatiskMeta = table.get("meta")?;
+            let config: StatiskConfig = table.get("config").unwrap_or_default();
             let paths: PathConfig = table.get("paths")?;
             let outputs: Vec<LuaOutput> = table.get("outputs")?;
 
             let config = LuaStatisk {
                 mode,
+                root,
                 meta,
+                config,
                 paths,
                 outputs,
             };
@@ -227,7 +237,9 @@ impl IntoLua for LuaStatisk {
     fn into_lua(self, lua: &Lua) -> LuaResult<LuaValue> {
         let table = lua.create_table()?;
         table.set("mode", self.mode)?;
+        table.set("root", self.root)?;
         table.set("meta", self.meta)?;
+        table.set("config", self.config)?;
         table.set("paths", self.paths)?;
         table.set("outputs", self.outputs)?;
 
@@ -253,14 +265,15 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
     let package: Table = lua.globals().get("package")?;
     let loaded: Table = package.get("loaded")?;
 
-    let root_key: &'static RegistryKey = Box::leak(Box::new(lua.create_registry_value(root)?));
+    let root_key = lua.create_registry_value(root)?;
+    ROOT_KEY.set(root_key).expect("Failed to set ROOT_KEY");
     let statisk_table = lua.create_table()?;
     statisk_table.set("mode", lua.to_value(&mode)?)?;
 
     statisk_table.set(
         "file",
         lua.create_function(|lua, template: PathBuf| {
-            let root: PathBuf = lua.registry_value(root_key)?;
+            let root: PathBuf = lua.registry_value(ROOT_KEY.get().unwrap())?;
             let file_path = root.join(template);
             let builder = FileOutputBuilder::new(file_path);
             lua.create_userdata(builder)
@@ -270,7 +283,7 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
     statisk_table.set(
         "template",
         lua.create_function(|lua, template: PathBuf| {
-            let root: PathBuf = lua.registry_value(root_key)?;
+            let root: PathBuf = lua.registry_value(ROOT_KEY.get().unwrap())?;
             let file_path = root.join(template);
             let builder = TemplateOutputBuilder::new(file_path);
             lua.create_userdata(builder)
@@ -280,16 +293,19 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
     statisk_table.set(
         "setup",
         lua.create_function(move |lua, config_table: LuaTable| {
-            let root: PathBuf = lua.registry_value(root_key)?;
+            let root: PathBuf = lua.registry_value(ROOT_KEY.get().unwrap())?;
             let meta: StatiskMeta = config_table.get("meta")?;
             let outputs: Vec<LuaOutput> = config_table.get("outputs")?;
+            let config: StatiskConfig = config_table.get("config").unwrap_or_default();
 
             let mut paths: PathConfig = config_table.get("paths")?;
             paths.with_root(root.clone());
 
             Ok(LuaStatisk {
+                root,
                 mode,
                 meta,
+                config,
                 paths,
                 outputs,
             })
