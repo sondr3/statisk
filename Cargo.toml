@@ -22,6 +22,7 @@ dashmap = { version = "6.1.0", features = ["serde"] }
 flate2 = "1.1.1"
 flume = { version = "0.11.1", default-features = false }
 http = "1.3.1"
+ignore = "0.4.23"
 jiff = { version = "0.2.14", features = ["serde"] }
 jotdown = "0.8.0"
 lightningcss = { version = "1.0.0-alpha.66", default-features = false, features = ["browserslist", "bundler"] }

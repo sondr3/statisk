@@ -5,6 +5,7 @@ use std::{
 };
 
 use anyhow::Result;
+use ignore::WalkBuilder;
 use sha1_smol::Sha1;
 use walkdir::{DirEntry, WalkDir};
 
@@ -57,6 +58,15 @@ where
         .filter_map(Result::ok)
         .filter(filter_files)
         .map(|f| f.path().to_owned())
+}
+
+pub fn walk_ignored(directory: &Path) -> impl Iterator<Item = PathBuf> {
+    WalkBuilder::new(directory)
+        .add_custom_ignore_filename(".statiskignore")
+        .build()
+        .filter_map(Result::ok)
+        .map(|f| f.path().to_owned())
+        .map(move |f| f.strip_prefix(directory).unwrap().to_owned())
 }
 
 pub fn copy_file(root: impl AsRef<Path>, prefix: &str, entry: impl Into<PathBuf>) -> Result<()> {
