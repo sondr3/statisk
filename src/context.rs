@@ -9,7 +9,7 @@ use crate::{
     asset::{Asset, PublicFile, is_buildable_css_file, is_js},
     content::{Content, ContentType},
     events::{Event, EventSender},
-    lua::{LuaStatisk, PathConfig},
+    lua::{path_config::PathConfig, statisk::LuaStatisk},
     render::Renderer,
     templating::{Templates, is_page},
     utils::{find_files, is_file},

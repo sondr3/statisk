@@ -10,7 +10,7 @@ use crate::{
     BuildMode,
     asset::{Asset, is_buildable_css_file, is_js},
     context::{Context as AppContext, collect_content, collect_pages},
-    lua::PathConfig,
+    lua::path_config::PathConfig,
     utils::find_files,
 };
 

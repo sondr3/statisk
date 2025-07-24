@@ -32,7 +32,7 @@ use crate::{
     cli::{Cmds, Options, print_completion},
     context::Context,
     events::EventSender,
-    lua::{LuaStatisk, create_lua_context},
+    lua::{create_lua_context, statisk::LuaStatisk},
     render::Renderer,
     templating::Templates,
     watcher::start_live_reload,
@@ -70,7 +70,13 @@ fn main() -> Result<()> {
     };
     let paths = statisk.paths.clone();
     dbg!(&statisk);
-
+    //
+    // let files: Vec<_> = walk_ignored(&root)
+    //     .inspect(|p| {
+    //         dbg!(statisk.outputs.iter().any(|o| o.is_match(dbg!(p))));
+    //     })
+    //     .collect();
+    //
     match opts.cmd {
         None | Some(Cmds::Dev) => {
             tracing::info!("dev mode engaged...");
@@ -91,8 +97,8 @@ fn main() -> Result<()> {
     let now = Instant::now();
 
     let events = EventSender::new();
-    let templates = Templates::new(&statisk.paths.templates)?;
-    let renderer = Renderer::new(&statisk.paths.out_dir);
+    let templates = Templates::new(&statisk.template_root())?;
+    let renderer = Renderer::new(&statisk.out_dir());
     let mut context = Context::new(templates, statisk, renderer, mode, events.clone());
     context.collect(&paths)?;
 
