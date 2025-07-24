@@ -35,6 +35,7 @@ use crate::{
     lua::{create_lua_context, statisk::LuaStatisk},
     render::Renderer,
     templating::Templates,
+    utils::walk_ignored,
     watcher::start_live_reload,
 };
 
@@ -70,12 +71,16 @@ fn main() -> Result<()> {
     };
     let paths = statisk.paths.clone();
     dbg!(&statisk);
-    //
-    // let files: Vec<_> = walk_ignored(&root)
-    //     .inspect(|p| {
-    //         dbg!(statisk.outputs.iter().any(|o| o.is_match(dbg!(p))));
-    //     })
-    //     .collect();
+
+    let files: Vec<_> = walk_ignored(&root)
+        .inspect(|p| {
+            for output in &statisk.outputs {
+                let is_match = output.is_match(p);
+                let pattern = output.glob_pattern();
+                println!("matcher {pattern:?} on file {p:?}: {is_match}");
+            }
+        })
+        .collect();
     //
     match opts.cmd {
         None | Some(Cmds::Dev) => {

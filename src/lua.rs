@@ -1,6 +1,7 @@
 mod file_builder;
 mod output;
 pub mod path_config;
+mod public_file_builder;
 pub mod statisk;
 mod template_builder;
 
@@ -13,8 +14,8 @@ use mlua::{RegistryKey, Table, prelude::*};
 use crate::{
     build_mode::BuildMode,
     lua::{
-        file_builder::FileOutputBuilder, statisk::LuaStatisk,
-        template_builder::TemplateOutputBuilder,
+        file_builder::FileOutputBuilder, public_file_builder::PublicFileOutputBuilder,
+        statisk::LuaStatisk, template_builder::TemplateOutputBuilder,
     },
 };
 
@@ -29,6 +30,14 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
     ROOT_KEY.set(root_key).expect("Failed to set ROOT_KEY");
     let statisk_table = lua.create_table()?;
     statisk_table.set("mode", lua.to_value(&mode)?)?;
+
+    statisk_table.set(
+        "public_file",
+        lua.create_function(|_, glob: String| {
+            let glob = Glob::new(&glob).context("invalid regex")?.compile_matcher();
+            Ok(PublicFileOutputBuilder::new(glob))
+        })?,
+    )?;
 
     statisk_table.set(
         "file",

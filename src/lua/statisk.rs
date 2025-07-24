@@ -12,7 +12,7 @@ use url::Url;
 use crate::{
     build_mode::BuildMode,
     config::StatiskConfig,
-    lua::{ROOT_KEY, output::LuaOutput, path_config::PathConfig},
+    lua::{ROOT_KEY, output::Output, path_config::PathConfig},
     meta::StatiskMeta,
 };
 
@@ -23,7 +23,7 @@ pub struct LuaStatisk {
     pub meta: StatiskMeta,
     pub config: StatiskConfig,
     pub paths: PathConfig,
-    pub outputs: Vec<LuaOutput>,
+    pub outputs: Vec<Output>,
 }
 
 impl FromLua for LuaStatisk {
@@ -41,7 +41,7 @@ impl FromLua for LuaStatisk {
             let mut paths: PathConfig = table.get("paths")?;
             paths.with_root(&root);
 
-            let outputs: Vec<LuaOutput> = table.get("outputs")?;
+            let outputs: Vec<Output> = table.get("outputs")?;
 
             let config = LuaStatisk {
                 mode,

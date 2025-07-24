@@ -4,7 +4,7 @@ use mlua::{
     prelude::{LuaError, LuaFunction, LuaResult, LuaUserDataMethods},
 };
 
-use crate::lua::output::{LuaBuildOutput, LuaOutput};
+use crate::lua::output::{BuildOutput, Output};
 
 #[derive(Debug, Clone)]
 pub struct TemplateOutputBuilder {
@@ -23,13 +23,13 @@ impl TemplateOutputBuilder {
     }
 }
 
-impl LuaBuildOutput for TemplateOutputBuilder {
-    fn build(self) -> LuaResult<LuaOutput> {
+impl BuildOutput for TemplateOutputBuilder {
+    fn build(self) -> LuaResult<Output> {
         let filter_fn = self
             .filter_fn
             .ok_or_else(|| LuaError::runtime("Template output must have a filter function"))?;
 
-        Ok(LuaOutput::Template {
+        Ok(Output::Template {
             glob: self.glob,
             filter: filter_fn,
             output_pattern: self.output_pattern,

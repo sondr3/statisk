@@ -10,14 +10,20 @@ use mlua::{
     prelude::{LuaError, LuaFunction, LuaResult, LuaValue},
 };
 
-use crate::lua::{file_builder::FileOutputBuilder, template_builder::TemplateOutputBuilder};
+use crate::lua::{
+    file_builder::FileOutputBuilder, public_file_builder::PublicFileOutputBuilder,
+    template_builder::TemplateOutputBuilder,
+};
 
-pub trait LuaBuildOutput {
-    fn build(self) -> LuaResult<LuaOutput>;
+pub trait BuildOutput {
+    fn build(self) -> LuaResult<Output>;
 }
 
 #[derive(Clone)]
-pub enum LuaOutput {
+pub enum Output {
+    PublicFile {
+        glob: GlobMatcher,
+    },
     File {
         glob: GlobMatcher,
         output: PathBuf,
@@ -29,15 +35,19 @@ pub enum LuaOutput {
     },
 }
 
-impl fmt::Debug for LuaOutput {
+impl fmt::Debug for Output {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            LuaOutput::File { glob, output } => f
+            Output::PublicFile { glob } => f
+                .debug_struct("LuaOutput::PublicFile")
+                .field("glob", &glob.glob().glob())
+                .finish(),
+            Output::File { glob, output } => f
                 .debug_struct("LuaOutput::File")
                 .field("glob", &glob.glob().glob())
                 .field("output", &output)
                 .finish(),
-            LuaOutput::Template {
+            Output::Template {
                 glob,
                 output_pattern,
                 ..
@@ -51,26 +61,39 @@ impl fmt::Debug for LuaOutput {
     }
 }
 
-impl LuaOutput {
+impl Output {
+    pub fn glob_pattern(&self) -> &str {
+        match self {
+            Output::PublicFile { glob } => glob.glob().glob(),
+            Output::File { glob, .. } => glob.glob().glob(),
+            Output::Template { glob, .. } => glob.glob().glob(),
+        }
+    }
+
     pub fn is_match(&self, path: &Path) -> bool {
         match self {
-            LuaOutput::File { glob, .. } => glob.is_match(path),
-            LuaOutput::Template { glob, .. } => glob.is_match(path),
+            Output::PublicFile { glob } => glob.is_match(path),
+            Output::File { glob, .. } => glob.is_match(path),
+            Output::Template { glob, .. } => glob.is_match(path),
         }
     }
 }
 
-impl IntoLua for LuaOutput {
+impl IntoLua for Output {
     fn into_lua(self, lua: &Lua) -> LuaResult<LuaValue> {
         let ud = match self {
-            LuaOutput::File { glob, output } => {
+            Output::PublicFile { glob } => {
+                let builder = PublicFileOutputBuilder { glob };
+                lua.create_userdata(builder)?
+            }
+            Output::File { glob, output } => {
                 let builder = FileOutputBuilder {
                     glob,
                     output: Some(output),
                 };
                 lua.create_userdata(builder)?
             }
-            LuaOutput::Template {
+            Output::Template {
                 glob,
                 filter,
                 output_pattern,
@@ -87,7 +110,7 @@ impl IntoLua for LuaOutput {
     }
 }
 
-impl FromLua for LuaOutput {
+impl FromLua for Output {
     fn from_lua(value: LuaValue, _lua: &Lua) -> LuaResult<Self> {
         match &value {
             LuaValue::UserData(ud) => {
@@ -95,7 +118,9 @@ impl FromLua for LuaOutput {
                     builder.clone().build()
                 } else if let Ok(builder) = ud.borrow::<TemplateOutputBuilder>() {
                     builder.clone().build()
-                } else if let Ok(output) = ud.borrow::<LuaOutput>() {
+                } else if let Ok(builder) = ud.borrow::<PublicFileOutputBuilder>() {
+                    builder.clone().build()
+                } else if let Ok(output) = ud.borrow::<Output>() {
                     Ok(output.clone())
                 } else {
                     Err(LuaError::FromLuaConversionError {

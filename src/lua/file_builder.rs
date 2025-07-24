@@ -6,7 +6,7 @@ use mlua::{
     prelude::{LuaError, LuaResult, LuaUserDataMethods},
 };
 
-use crate::lua::output::{LuaBuildOutput, LuaOutput};
+use crate::lua::output::{BuildOutput, Output};
 
 #[derive(Debug, Clone)]
 pub struct FileOutputBuilder {
@@ -20,13 +20,13 @@ impl FileOutputBuilder {
     }
 }
 
-impl LuaBuildOutput for FileOutputBuilder {
-    fn build(self) -> LuaResult<LuaOutput> {
+impl BuildOutput for FileOutputBuilder {
+    fn build(self) -> LuaResult<Output> {
         let output = self
             .output
             .ok_or_else(|| LuaError::runtime("Template output must have a filter function"))?;
 
-        Ok(LuaOutput::File {
+        Ok(Output::File {
             glob: self.glob,
             output,
         })
