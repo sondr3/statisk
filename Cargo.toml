@@ -37,7 +37,8 @@ oxc_codegen = "0.72.0"
 oxc_mangler = "0.72.0"
 oxc_parser = "0.72.0"
 oxc_span = "0.72.0"
-notify = "8.0.0"
+notify = { version = "8.1.0", features = ["flume"] }
+notify-debouncer-full = { version = "0.5.0", features = ["flume"] }
 serde = { version = "1.0.219", features = ["derive"] }
 sha1_smol = { version = "1.0.1", features = ["std"] }
 simple-minify-html = { version = "0.17.1", features = ["css", "js"] }
@@ -51,6 +52,9 @@ walkdir = "2.5.0"
 typst = { version = "0.13.1", features = [] }
 typst-html = "0.13.1"
 globset = { version = "0.4.16", default-features = false, features = ["serde"] }
+
+[patch.crates-io]
+notify-debounder-full = { git = "https://github.com/notify-rs/notify", rev = "c685ea7", package = "notify-debouncer-full" }
 
 [dev-dependencies]
 insta = { version = "1.43.1", features = ["toml"] }
