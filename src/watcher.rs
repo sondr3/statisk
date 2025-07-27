@@ -1,31 +1,19 @@
-use std::{fs, path::PathBuf, thread, time::Duration};
+use std::{path::PathBuf, thread, time::Duration};
 
 use ahash::HashSet;
 use anyhow::Result;
-use ignore::gitignore::{Gitignore, GitignoreBuilder};
 use notify_debouncer_full::{
     DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache, new_debouncer,
     notify::{EventKind, RecursiveMode, event::ModifyKind},
 };
 
-use crate::{events, events::EventSender};
+use crate::{events, events::EventSender, ignorer::StatiskIgnore};
 
 pub fn start_live_reload(
     root: PathBuf,
     events: EventSender,
 ) -> Result<Debouncer<notify_debouncer_full::notify::RecommendedWatcher, RecommendedCache>> {
-    let statisk_ignore = fs::exists(root.join(".statiskignore")).unwrap_or_default();
-    let git_ignore = fs::exists(root.join(".gitignore")).unwrap_or_default();
-    let mut ignore = GitignoreBuilder::new(&root);
-    if statisk_ignore {
-        ignore.add(root.join(".statiskignore"));
-    }
-
-    if git_ignore {
-        ignore.add(root.join(".gitignore"));
-    }
-
-    let ignore = ignore.build()?;
+    let ignore = StatiskIgnore::new(&root)?;
     let (tx, rx) = flume::unbounded::<DebounceEventResult>();
     let mut watcher = new_debouncer(Duration::from_secs(1), None, tx)?;
 
@@ -53,15 +41,12 @@ pub fn start_live_reload(
     Ok(watcher)
 }
 
-fn filter_event(event: DebouncedEvent, ignore: &Gitignore) -> Option<HashSet<PathBuf>> {
+fn filter_event(event: DebouncedEvent, ignore: &StatiskIgnore) -> Option<HashSet<PathBuf>> {
     let paths: HashSet<_> = event
         .paths
         .clone()
         .into_iter()
-        .filter(|p| {
-            let is_dir = p.is_dir();
-            !ignore.matched_path_or_any_parents(p, is_dir).is_ignore()
-        })
+        .filter(|p| !ignore.is_ignored(p))
         .collect();
 
     if paths.is_empty() {
