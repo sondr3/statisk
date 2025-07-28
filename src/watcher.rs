@@ -1,44 +1,35 @@
-use std::{path::PathBuf, thread, time::Duration};
+use std::{path::PathBuf, thread, thread::JoinHandle, time::Duration};
 
 use ahash::HashSet;
 use anyhow::Result;
 use notify_debouncer_full::{
-    DebounceEventResult, DebouncedEvent, Debouncer, RecommendedCache, new_debouncer,
+    DebounceEventResult, DebouncedEvent, new_debouncer,
     notify::{EventKind, RecursiveMode, event::ModifyKind},
 };
 
 use crate::{events, events::EventSender, ignorer::StatiskIgnore};
 
-pub fn start_live_reload(
-    root: PathBuf,
-    events: EventSender,
-) -> Result<Debouncer<notify_debouncer_full::notify::RecommendedWatcher, RecommendedCache>> {
-    let ignore = StatiskIgnore::new(&root)?;
-    let (tx, rx) = flume::unbounded::<DebounceEventResult>();
-    let mut watcher = new_debouncer(Duration::from_secs(1), None, tx)?;
+pub fn start_live_reload(root: PathBuf, events: EventSender) -> Result<JoinHandle<Result<()>>> {
+    let handle = thread::spawn(move || {
+        let ignore = StatiskIgnore::new(&root).unwrap();
+        let (tx, rx) = flume::unbounded::<DebounceEventResult>();
+        let mut watcher = new_debouncer(Duration::from_secs(1), None, tx)?;
 
-    let _ = watcher.watch(root, RecursiveMode::Recursive);
-
-    thread::spawn(move || {
-        for event in rx {
-            match event {
-                Ok(evt) => {
-                    evt.into_iter()
-                        .filter_map(|e| filter_event(e, &ignore))
-                        .flatten()
-                        .for_each(|p| {
-                            tracing::debug!("File changed: {:?}", p);
-                            events.send(events::Event::Path(p));
-                        });
-                }
-                Err(err) => tracing::error!("Error in debouncer: {:?}", err),
-            }
+        watcher.watch(root, RecursiveMode::Recursive).unwrap();
+        while let Ok(Ok(evt)) = rx.recv() {
+            evt.into_iter()
+                .filter_map(|e| filter_event(e, &ignore))
+                .flatten()
+                .for_each(|p| {
+                    tracing::debug!("File changed: {:?}", p);
+                    events.send(events::Event::Path(p));
+                });
         }
-    })
-    .join()
-    .unwrap();
 
-    Ok(watcher)
+        Ok(())
+    });
+
+    Ok(handle)
 }
 
 fn filter_event(event: DebouncedEvent, ignore: &StatiskIgnore) -> Option<HashSet<PathBuf>> {

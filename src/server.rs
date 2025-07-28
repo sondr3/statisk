@@ -4,7 +4,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, RwLock},
     thread,
-    thread::spawn,
+    thread::JoinHandle,
 };
 
 use anyhow::{Context, Result};
@@ -13,19 +13,18 @@ use flume::Receiver;
 use http::{StatusCode, header::CONTENT_TYPE, method::Method};
 use tungstenite::{Message, WebSocket, accept};
 
-use crate::{
-    events::{Event, EventSender},
-    utils::extension,
-};
+use crate::events::{Event, EventSender};
 
-pub fn create(root: &Path, events: EventSender) {
-    thread::scope(|scope| {
-        let server = scope.spawn(|| create_http_server(root).unwrap());
-        let websocket = scope.spawn(|| create_websocket_server(&events).unwrap());
+pub fn create(root: PathBuf, events: EventSender) -> JoinHandle<()> {
+    thread::spawn(move || {
+        thread::scope(|scope| {
+            let server = scope.spawn(|| create_http_server(&root).unwrap());
+            let websocket = scope.spawn(|| create_websocket_server(&events).unwrap());
 
-        server.join().unwrap();
-        websocket.join().unwrap();
-    });
+            server.join().unwrap();
+            websocket.join().unwrap();
+        })
+    })
 }
 
 fn create_http_server(root: &Path) -> Result<()> {
@@ -62,21 +61,20 @@ impl NotificationServer {
 
         let connections_events = self.clients.clone();
 
-        spawn(move || {
+        thread::spawn(move || {
             while let Ok(event) = self.rx.recv() {
                 if let Ok(mut connections) = connections_events.write() {
-                    connections.retain_mut(|websocket| {
-                        let message = match event {
-                            Event::Reload => Message::Text("reload".into()),
-                        };
-
-                        if websocket.send(message).is_ok() {
-                            true
-                        } else {
-                            let _ = websocket.close(None);
-                            false
-                        }
-                    });
+                    if let Event::Reload = event {
+                        connections.retain_mut(|websocket| {
+                            let message = Message::Text("reload".into());
+                            if websocket.send(message).is_ok() {
+                                true
+                            } else {
+                                let _ = websocket.close(None);
+                                false
+                            }
+                        })
+                    }
                 }
             }
         });
@@ -86,7 +84,7 @@ impl NotificationServer {
 
             let connections = self.clients.clone();
 
-            spawn(move || {
+            thread::spawn(move || {
                 if let Ok(websocket) = accept(stream) {
                     if let Ok(mut connections) = connections.write() {
                         connections.push(websocket);
@@ -178,7 +176,7 @@ impl FileServe {
         }
         let file = File::open(&path)?;
 
-        let mime = new_mime_guess::from_ext(&extension(&path))
+        let mime = new_mime_guess::from_path(&path)
             .first_or_text_plain()
             .to_string();
         ResponseBuilder::new()

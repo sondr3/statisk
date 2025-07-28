@@ -125,13 +125,13 @@ fn main() -> Result<()> {
 
     match opts.cmd {
         None | Some(Cmds::Dev) => {
-            let root = paths.out_dir.clone();
-            let watcher = thread::spawn(move || start_live_reload(&paths, &context));
+            let out_dir = paths.out_dir.clone();
+            let reload = start_live_reload(root.clone(), events.clone())?;
+            let server = server::create(out_dir, events.clone());
 
             tracing::info!("serving site at http://localhost:3000/...");
-            server::create(&root, events.clone());
-
-            watcher.join().unwrap();
+            reload.join().unwrap()?;
+            server.join().unwrap();
         }
         Some(Cmds::Build) => {
             let now = Instant::now();
@@ -143,7 +143,7 @@ fn main() -> Result<()> {
         }
         Some(Cmds::Serve) => {
             tracing::info!("serving site at http://localhost:3000/...");
-            server::create(&paths.out_dir, events.clone());
+            server::create(paths.out_dir, events.clone());
         }
         Some(Cmds::Completion { .. }) => unreachable!(),
     }
