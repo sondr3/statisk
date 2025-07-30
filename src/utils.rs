@@ -59,11 +59,22 @@ where
         .map(|f| f.path().to_owned())
 }
 
+pub fn new_copy_file(file: PathBuf, root: &Path, out_dir: &Path) -> Result<()> {
+    let Some(filename) = file.file_name() else {
+        return Err(anyhow::anyhow!("File {file:?} has no filename"));
+    };
+    let dest = dbg!(out_dir.join(filename));
+    println!("Copying file: {file:?} to {dest:?}");
+    dbg!(std::fs::create_dir_all(dest.parent().unwrap())?);
+    dbg!(std::fs::copy(root.join(file), dest)?);
+    Ok(())
+}
+
 pub fn copy_file(root: impl AsRef<Path>, prefix: &str, entry: impl Into<PathBuf>) -> Result<()> {
     let path = entry.into();
     let filename = path.strip_prefix(prefix)?;
 
-    let file: PathBuf = [root.as_ref(), filename].into_iter().collect();
+    let file = root.as_ref().join(&filename);
 
     std::fs::create_dir_all(file.parent().unwrap())?;
     File::create(&file)?;

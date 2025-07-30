@@ -10,9 +10,12 @@ use mlua::{
     prelude::{LuaError, LuaFunction, LuaResult, LuaValue},
 };
 
-use crate::lua::{
-    file_builder::FileOutputBuilder, public_file_builder::PublicFileOutputBuilder,
-    template_builder::TemplateOutputBuilder,
+use crate::{
+    lua::{
+        file_builder::FileOutputBuilder, public_file_builder::PublicFileOutputBuilder,
+        template_builder::TemplateOutputBuilder,
+    },
+    utils::new_copy_file,
 };
 
 pub trait BuildOutput {
@@ -76,6 +79,19 @@ impl Output {
             Output::File { glob, .. } => glob.is_match(path),
             Output::Template { glob, .. } => glob.is_match(path),
         }
+    }
+
+    pub fn build(&self, path: &Path, root: &Path, out_dir: &Path) -> LuaResult<()> {
+        match (self.is_match(path), self) {
+            (true, Output::PublicFile { .. }) => {
+                new_copy_file(path.to_path_buf(), root, out_dir)?;
+            }
+            (true, Output::File { .. }) => {}
+            (true, Output::Template { .. }) => {}
+            _ => {}
+        }
+
+        Ok(())
     }
 }
 

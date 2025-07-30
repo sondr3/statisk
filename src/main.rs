@@ -72,16 +72,14 @@ fn main() -> Result<()> {
     let paths = statisk.paths.clone();
     dbg!(&statisk);
 
-    let files: Vec<_> = walk_ignored(&root)
+    let _files: Vec<_> = StatiskIgnore::walker(&root)
         .inspect(|p| {
             for output in &statisk.outputs {
-                let is_match = output.is_match(p);
-                let pattern = output.glob_pattern();
-                println!("matcher {pattern:?} on file {p:?}: {is_match}");
+                output.build(p, &root, &statisk.paths.out_dir).unwrap();
             }
         })
         .collect();
-    //
+
     match opts.cmd {
         None | Some(Cmds::Dev) => {
             tracing::info!("dev mode engaged...");
