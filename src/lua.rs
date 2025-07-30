@@ -1,9 +1,6 @@
-mod file_builder;
 mod output;
 pub mod path_config;
-mod public_file_builder;
 pub mod statisk;
-mod template_builder;
 
 use std::{path::PathBuf, sync::OnceLock};
 
@@ -14,12 +11,17 @@ use mlua::{RegistryKey, Table, prelude::*};
 use crate::{
     build_mode::BuildMode,
     lua::{
-        file_builder::FileOutputBuilder, public_file_builder::PublicFileOutputBuilder,
-        statisk::LuaStatisk, template_builder::TemplateOutputBuilder,
+        output::{OutputBuilder, OutputKind},
+        statisk::LuaStatisk,
     },
 };
 
 pub static ROOT_KEY: OnceLock<RegistryKey> = OnceLock::new();
+
+fn create_output_builder(kind: OutputKind, glob: String) -> LuaResult<OutputBuilder> {
+    let glob = Glob::new(&glob).context("invalid regex")?;
+    Ok(OutputBuilder::new(kind, glob)?)
+}
 
 pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
     let lua = Lua::new();
@@ -33,36 +35,28 @@ pub fn create_lua_context(mode: BuildMode, root: PathBuf) -> LuaResult<Lua> {
 
     statisk_table.set(
         "public_file",
-        lua.create_function(|_, glob: String| {
-            let glob = Glob::new(&glob).context("invalid regex")?.compile_matcher();
-            Ok(PublicFileOutputBuilder::new(glob))
-        })?,
+        lua.create_function(|_, glob: String| create_output_builder(OutputKind::PublicFile, glob))?,
+    )?;
+
+    statisk_table.set(
+        "asset",
+        lua.create_function(|_, glob: String| create_output_builder(OutputKind::Asset, glob))?,
     )?;
 
     statisk_table.set(
         "file",
-        lua.create_function(|_, template: String| {
-            let glob = Glob::new(&template)
-                .context("invalid regex")?
-                .compile_matcher();
-            Ok(FileOutputBuilder::new(glob))
-        })?,
+        lua.create_function(|_, glob: String| create_output_builder(OutputKind::File, glob))?,
     )?;
 
     statisk_table.set(
         "template",
-        lua.create_function(|_, template: String| {
-            let glob = Glob::new(&template)
-                .context("invalid regex")?
-                .compile_matcher();
-            Ok(TemplateOutputBuilder::new(glob))
-        })?,
+        lua.create_function(|_, glob: String| create_output_builder(OutputKind::Template, glob))?,
     )?;
 
     statisk_table.set(
         "setup",
         lua.create_function(move |lua, config_table: LuaTable| {
-            LuaStatisk::from_lua(LuaValue::Table(config_table), &lua)
+            LuaStatisk::from_lua(LuaValue::Table(config_table), lua)
         })?,
     )?;
 
