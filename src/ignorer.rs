@@ -5,6 +5,9 @@ use ignore::{
     WalkBuilder,
     gitignore::{Gitignore, GitignoreBuilder, gitconfig_excludes_path},
 };
+use walkdir::WalkDir;
+
+use crate::utils::is_visible;
 
 pub struct StatiskIgnore {
     ignore: Gitignore,
@@ -34,6 +37,14 @@ impl StatiskIgnore {
             .filter_map(Result::ok)
             .map(|f| f.path().to_owned())
             .map(move |f| f.strip_prefix(root).unwrap().to_owned())
+    }
+
+    pub fn walk_dir(directory: &Path) -> impl Iterator<Item = PathBuf> {
+        WalkDir::new(directory)
+            .into_iter()
+            .filter_entry(is_visible)
+            .filter_map(Result::ok)
+            .map(|f| f.path().to_owned())
     }
 
     pub fn is_ignored(&self, path: &Path) -> bool {

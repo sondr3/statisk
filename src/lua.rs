@@ -1,4 +1,4 @@
-mod output;
+pub mod output;
 pub mod path_config;
 pub mod statisk;
 

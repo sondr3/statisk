@@ -17,6 +17,13 @@ pub enum OutputKind {
     Asset,
 }
 
+#[derive(Debug, Copy, Clone)]
+pub enum OutputMatch {
+    Glob(OutputKind),
+    Watch(OutputKind),
+    None,
+}
+
 #[derive(Clone)]
 pub struct Output {
     pub kind: OutputKind,
@@ -51,10 +58,6 @@ impl fmt::Debug for Output {
 }
 
 impl Output {
-    pub fn is_match(&self, path: &Path) -> bool {
-        self.glob.is_match(path) || self.watch_set.is_match(path)
-    }
-
     pub fn is_glob_match(&self, path: &Path) -> bool {
         self.glob.is_match(path)
     }
@@ -63,15 +66,22 @@ impl Output {
         self.watch_set.is_match(path)
     }
 
+    pub fn match_kind(&self, path: &Path) -> OutputMatch {
+        if self.is_glob_match(path) {
+            OutputMatch::Glob(self.kind)
+        } else if self.is_watch_match(path) {
+            OutputMatch::Watch(self.kind)
+        } else {
+            OutputMatch::None
+        }
+    }
+
     pub fn build(&self, path: &Path, root: &Path, out_dir: &Path) -> LuaResult<()> {
         match self.kind {
-            OutputKind::Asset if self.is_match(path) => {}
-            OutputKind::PublicFile if self.is_match(path) => {
-                self.handle_public_file(path, root, out_dir)?
-            }
+            OutputKind::Asset => {}
+            OutputKind::PublicFile => self.handle_public_file(path, root, out_dir)?,
             OutputKind::File => {}
             OutputKind::Template => self.handle_template(path, root, out_dir)?,
-            _ => {}
         }
 
         Ok(())
