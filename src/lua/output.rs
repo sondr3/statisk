@@ -1,7 +1,7 @@
 use std::{fmt, fmt::Formatter, path::Path};
 
 use anyhow::{Context, Result};
-use globset::{Glob, GlobSet, GlobSetBuilder};
+use globset::{Glob, GlobBuilder, GlobMatcher, GlobSet, GlobSetBuilder};
 use mlua::{
     FromLua, Lua, UserData,
     prelude::{LuaError, LuaFunction, LuaResult, LuaUserDataMethods, LuaValue},
@@ -20,7 +20,8 @@ pub enum OutputKind {
 #[derive(Clone)]
 pub struct Output {
     pub kind: OutputKind,
-    pub glob_set: GlobSet,
+    pub glob: GlobMatcher,
+    pub watch_set: GlobSet,
     pub out_pattern: Option<String>,
     pub filter_fn: Option<LuaFunction>,
 }
@@ -29,7 +30,8 @@ impl Default for Output {
     fn default() -> Self {
         Output {
             kind: OutputKind::File,
-            glob_set: GlobSet::empty(),
+            glob: Glob::new("*").unwrap().compile_matcher(),
+            watch_set: GlobSet::empty(),
             out_pattern: None,
             filter_fn: None,
         }
@@ -40,7 +42,8 @@ impl fmt::Debug for Output {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         f.debug_struct("LuaOutput")
             .field("kind", &self.kind)
-            .field("glob", &self.glob_set.len())
+            .field("glob", &self.glob.glob().glob())
+            .field("watch_set", &self.watch_set.len())
             .field("out_pattern", &self.out_pattern)
             .field("filter_fn", &self.filter_fn.is_some())
             .finish()
@@ -49,20 +52,40 @@ impl fmt::Debug for Output {
 
 impl Output {
     pub fn is_match(&self, path: &Path) -> bool {
-        self.glob_set.is_match(path)
+        self.glob.is_match(path) || self.watch_set.is_match(path)
+    }
+
+    pub fn is_glob_match(&self, path: &Path) -> bool {
+        self.glob.is_match(path)
+    }
+
+    pub fn is_watch_match(&self, path: &Path) -> bool {
+        self.watch_set.is_match(path)
     }
 
     pub fn build(&self, path: &Path, root: &Path, out_dir: &Path) -> LuaResult<()> {
-        match (self.is_match(path), self.kind) {
-            (true, OutputKind::Asset) => {}
-            (true, OutputKind::PublicFile) => {
-                new_copy_file(path.to_path_buf(), root, out_dir)?;
+        match self.kind {
+            OutputKind::Asset if self.is_match(path) => {}
+            OutputKind::PublicFile if self.is_match(path) => {
+                self.handle_public_file(path, root, out_dir)?
             }
-            (true, OutputKind::File) => {}
-            (true, OutputKind::Template) => {}
+            OutputKind::File => {}
+            OutputKind::Template => self.handle_template(path, root, out_dir)?,
             _ => {}
         }
 
+        Ok(())
+    }
+
+    fn handle_public_file(&self, path: &Path, root: &Path, out_dir: &Path) -> Result<()> {
+        new_copy_file(path.to_path_buf(), root, out_dir)?;
+        Ok(())
+    }
+
+    fn handle_template(&self, path: &Path, root: &Path, out_dir: &Path) -> Result<()> {
+        // Placeholder for template handling logic
+        // This would typically involve rendering a template file
+        // and writing the output to the specified directory.
         Ok(())
     }
 }
@@ -101,7 +124,8 @@ impl FromLua for Output {
 #[derive(Clone)]
 pub struct OutputBuilder {
     pub kind: OutputKind,
-    pub glob_set: GlobSetBuilder,
+    pub glob: Glob,
+    pub watch_set: GlobSetBuilder,
     pub out_pattern: Option<String>,
     pub filter_fn: Option<LuaFunction>,
 }
@@ -110,7 +134,8 @@ impl OutputBuilder {
     pub fn build(self) -> LuaResult<Output> {
         Ok(Output {
             kind: self.kind,
-            glob_set: self.glob_set.build().context("Failed to build glob set")?,
+            glob: self.glob.compile_matcher(),
+            watch_set: self.watch_set.build().context("Failed to build glob set")?,
             out_pattern: self.out_pattern,
             filter_fn: self.filter_fn,
         })
@@ -119,7 +144,8 @@ impl OutputBuilder {
     pub fn new(kind: OutputKind, glob: Glob) -> Result<Self> {
         Ok(Self {
             kind,
-            glob_set: GlobSetBuilder::new().add(glob).to_owned(),
+            glob,
+            watch_set: GlobSetBuilder::new(),
             out_pattern: None,
             filter_fn: None,
         })
@@ -130,7 +156,7 @@ impl UserData for OutputBuilder {
     fn add_methods<'lua, M: LuaUserDataMethods<Self>>(methods: &mut M) {
         methods.add_method_mut("watch", |_lua, this, glob: String| {
             let glob = Glob::new(&glob).context("invalid glob pattern")?;
-            this.glob_set.add(glob);
+            this.watch_set.add(glob);
             Ok(this.clone())
         });
 
