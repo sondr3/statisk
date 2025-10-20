@@ -5,11 +5,12 @@ use anyhow::Result;
 use crate::{
     asset::PublicFile,
     content::ContentType,
-    context::Context,
+    context::StatiskContext,
     minify::{self},
     utils::{copy_file, write_file},
 };
 
+#[derive(Debug)]
 pub struct Renderer {
     pub dest: PathBuf,
 }
@@ -21,17 +22,16 @@ impl Renderer {
         }
     }
 
-    pub fn render_context(&self, context: &Context) -> Result<()> {
+    pub fn render_context(&self, context: &StatiskContext) -> Result<()> {
         self.create_dest()?;
 
-        self.copy_public_files(&context.public_files)?;
         self.write_assets(context)?;
         self.write_content(context)?;
 
         Ok(())
     }
 
-    pub fn write_content(&self, context: &Context) -> Result<()> {
+    pub fn write_content(&self, context: &StatiskContext) -> Result<()> {
         for page in context.pages.iter() {
             let f = page.value();
             write_file(
@@ -55,7 +55,7 @@ impl Renderer {
             .try_for_each(|f| copy_file(&self.dest, &f.prefix, &f.path))
     }
 
-    pub fn write_assets(&self, context: &Context) -> Result<()> {
+    pub fn write_assets(&self, context: &StatiskContext) -> Result<()> {
         for asset in context.assets.iter() {
             let asset = asset.value();
             write_file(

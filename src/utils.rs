@@ -106,12 +106,6 @@ pub fn filename(path: impl Into<PathBuf>) -> String {
     )
 }
 
-pub fn extension(path: &Path) -> String {
-    path.extension()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_default()
-}
-
 pub mod toml_date_jiff_serde {
     use jiff::civil::Date;
     use serde::{self, Deserialize, Deserializer, Serializer};

@@ -11,7 +11,6 @@ use lightningcss::{
 };
 use oxc_span::SourceType;
 use serde::{Deserialize, Serialize};
-use walkdir::DirEntry;
 
 use crate::{
     build_mode::BuildMode,
@@ -90,19 +89,4 @@ impl Asset {
             },
         })
     }
-}
-
-pub fn is_js(entry: &DirEntry) -> bool {
-    entry
-        .path()
-        .extension()
-        .is_some_and(|e| ["js", "mjs", "cjs"].contains(&e.to_string_lossy().as_ref()))
-}
-
-pub fn is_buildable_css_file(entry: &DirEntry) -> bool {
-    !entry
-        .file_name()
-        .to_str()
-        .is_some_and(|f| f.starts_with('_'))
-        && entry.path().extension().is_some_and(|p| p == "css")
 }

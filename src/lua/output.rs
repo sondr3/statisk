@@ -96,6 +96,7 @@ impl Output {
         // Placeholder for template handling logic
         // This would typically involve rendering a template file
         // and writing the output to the specified directory.
+        println!("path={:?}, root={:?}, out_dir={:?}", path, root, out_dir);
         Ok(())
     }
 }

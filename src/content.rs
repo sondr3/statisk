@@ -5,7 +5,7 @@ use minijinja::{context, value::Value};
 use serde::Serialize;
 
 use crate::{
-    context::Context as SContext,
+    context::StatiskContext as SContext,
     frontmatter::Frontmatter,
     jotdown::render_jotdown,
     templating::{TemplatePath, create_base_context},

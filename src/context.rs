@@ -73,7 +73,9 @@ impl StatiskContext {
                             .build(&path, &self.statisk.root, &self.statisk.out_dir())
                             .context("failed to build public file")?;
                     }
-                    Glob(OutputKind::Template) => {}
+                    Glob(OutputKind::Template) => {
+                        output.build(&path, &self.statisk.root, &self.statisk.out_dir());
+                    }
                     Glob(OutputKind::Asset) => {}
                     _ => {}
                 }

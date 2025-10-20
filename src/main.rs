@@ -7,6 +7,7 @@ mod content;
 mod context;
 mod events;
 mod frontmatter;
+mod ignorer;
 mod jotdown;
 mod lua;
 mod meta;
@@ -18,7 +19,7 @@ mod typst;
 mod utils;
 mod watcher;
 
-use std::{env::current_dir, fs, thread, time::Instant};
+use std::{env::current_dir, fs, time::Instant};
 
 use anyhow::{Result, bail};
 use clap::{CommandFactory, Parser};
@@ -30,12 +31,12 @@ use tracing_subscriber::{
 use crate::{
     build_mode::BuildMode,
     cli::{Cmds, Options, print_completion},
-    context::Context,
+    context::StatiskContext,
     events::EventSender,
+    ignorer::StatiskIgnore,
     lua::{create_lua_context, statisk::LuaStatisk},
     render::Renderer,
     templating::Templates,
-    utils::walk_ignored,
     watcher::start_live_reload,
 };
 
@@ -70,15 +71,15 @@ fn main() -> Result<()> {
         Err(err) => bail!("could not read config: {:?}", err),
     };
     let paths = statisk.paths.clone();
+    let out_dir = statisk.out_dir();
     dbg!(&statisk);
 
-    let _files: Vec<_> = StatiskIgnore::walker(&root)
-        .inspect(|p| {
-            for output in &statisk.outputs {
-                output.build(p, &root, &statisk.paths.out_dir).unwrap();
-            }
-        })
-        .collect();
+    if matches!(opts.cmd, None | Some(Cmds::Dev | Cmds::Build)) {
+        if out_dir.exists() {
+            tracing::debug!("Removing out directory");
+            fs::remove_dir_all(&out_dir)?;
+        }
+    }
 
     match opts.cmd {
         None | Some(Cmds::Dev) => {
@@ -102,17 +103,10 @@ fn main() -> Result<()> {
     let events = EventSender::new();
     let templates = Templates::new(&statisk.template_root())?;
     let renderer = Renderer::new(&statisk.out_dir());
-    let mut context = Context::new(templates, statisk, renderer, mode, events.clone());
-    context.collect(&paths)?;
+    let mut context = StatiskContext::new(templates, statisk, renderer, mode, events.clone());
 
     if matches!(opts.cmd, None | Some(Cmds::Dev | Cmds::Build)) {
-        if paths.out_dir.exists() {
-            tracing::debug!("Removing out directory");
-            fs::remove_dir_all(&paths.out_dir)?;
-        }
-
-        context.build()?;
-
+        context.collect()?;
         let done = now.elapsed();
         tracing::info!(
             "Built {} pages in {:?}ms",
@@ -123,7 +117,6 @@ fn main() -> Result<()> {
 
     match opts.cmd {
         None | Some(Cmds::Dev) => {
-            let out_dir = paths.out_dir.clone();
             let reload = start_live_reload(root.clone(), events.clone())?;
             let server = server::create(out_dir, events.clone());
 
@@ -134,7 +127,7 @@ fn main() -> Result<()> {
         Some(Cmds::Build) => {
             let now = Instant::now();
 
-            compress::folder(&paths.out_dir)?;
+            compress::folder(&out_dir)?;
 
             let done = now.elapsed();
             tracing::info!("Finished compressing output in {:?}ms", done.as_millis());
