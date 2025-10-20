@@ -1,4 +1,4 @@
-use std::{fmt, fmt::Formatter, fs::read_to_string, path::Path};
+use std::{fs::read_to_string, path::Path};
 
 use ahash::AHashMap;
 use anyhow::{Context, Result, anyhow};
@@ -7,7 +7,8 @@ use minijinja_autoreload::AutoReloader;
 use minijinja_contrib::add_to_environment;
 
 use crate::{
-    context::StatiskContext,
+    build_mode::BuildMode,
+    context::Context as SContext,
     utils::{filename, find_files, is_file, unprefixed_parent},
 };
 
@@ -52,16 +53,7 @@ pub struct Templates {
     pub templates: AHashMap<TemplatePath, Template>,
 }
 
-impl fmt::Debug for Templates {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Templates")
-            .field("environment", &"AutoReloader")
-            .field("templates", &self.templates)
-            .finish()
-    }
-}
-
-pub fn create_base_context(context: &StatiskContext) -> Value {
+pub fn create_base_context(mode: BuildMode, context: &SContext) -> Value {
     let pages = context
         .pages
         .iter()
@@ -70,10 +62,10 @@ pub fn create_base_context(context: &StatiskContext) -> Value {
         .collect::<Vec<_>>();
 
     context! {
-        mode => context.mode,
-        is_dev => context.mode.normal(),
+        mode => mode,
+        is_dev => mode.normal(),
         assets => *context.assets,
-        config => context.statisk.meta,
+        config => context.config,
         pages => pages
     }
 }

@@ -2,24 +2,22 @@ mod asset;
 mod build_mode;
 mod cli;
 mod compress;
-mod config;
 mod content;
 mod context;
 mod events;
 mod frontmatter;
-mod ignorer;
 mod jotdown;
-mod lua;
-mod meta;
 mod minify;
+mod paths;
 mod render;
 mod server;
+mod statisk_config;
 mod templating;
 mod typst;
 mod utils;
 mod watcher;
 
-use std::{env::current_dir, fs, time::Instant};
+use std::{env::current_dir, fs, thread, time::Instant};
 
 use anyhow::{Result, bail};
 use clap::{CommandFactory, Parser};
@@ -31,11 +29,11 @@ use tracing_subscriber::{
 use crate::{
     build_mode::BuildMode,
     cli::{Cmds, Options, print_completion},
-    context::StatiskContext,
+    context::Context,
     events::EventSender,
-    ignorer::StatiskIgnore,
-    lua::{create_lua_context, statisk::LuaStatisk},
+    paths::Paths,
     render::Renderer,
+    statisk_config::StatiskConfig,
     templating::Templates,
     watcher::start_live_reload,
 };
@@ -65,21 +63,11 @@ fn main() -> Result<()> {
         Some(Cmds::Build | Cmds::Serve) => BuildMode::Optimized,
     };
 
-    let lua = create_lua_context(mode, root.clone())?;
-    let statisk = match LuaStatisk::load(&lua, &root.join("statisk.lua")) {
-        Ok(statisk) => statisk,
+    let paths = Paths::new(&root);
+    let config = match StatiskConfig::from_path(&paths.root.join("statisk.toml"), mode) {
+        Ok(config) => config,
         Err(err) => bail!("could not read config: {:?}", err),
     };
-    let paths = statisk.paths.clone();
-    let out_dir = statisk.out_dir();
-    dbg!(&statisk);
-
-    if matches!(opts.cmd, None | Some(Cmds::Dev | Cmds::Build)) {
-        if out_dir.exists() {
-            tracing::debug!("Removing out directory");
-            fs::remove_dir_all(&out_dir)?;
-        }
-    }
 
     match opts.cmd {
         None | Some(Cmds::Dev) => {
@@ -101,12 +89,19 @@ fn main() -> Result<()> {
     let now = Instant::now();
 
     let events = EventSender::new();
-    let templates = Templates::new(&statisk.template_root())?;
-    let renderer = Renderer::new(&statisk.out_dir());
-    let mut context = StatiskContext::new(templates, statisk, renderer, mode, events.clone());
+    let templates = Templates::new(&paths.templates)?;
+    let renderer = Renderer::new(&paths.out);
+    let mut context = Context::new(templates, config, renderer, mode, events.clone());
+    context.collect(&paths)?;
 
     if matches!(opts.cmd, None | Some(Cmds::Dev | Cmds::Build)) {
-        context.collect()?;
+        if paths.out.exists() {
+            tracing::debug!("Removing out directory");
+            fs::remove_dir_all(&paths.out)?;
+        }
+
+        context.build()?;
+
         let done = now.elapsed();
         tracing::info!(
             "Built {} pages in {:?}ms",
@@ -117,24 +112,25 @@ fn main() -> Result<()> {
 
     match opts.cmd {
         None | Some(Cmds::Dev) => {
-            let reload = start_live_reload(root.clone(), events.clone())?;
-            let server = server::create(out_dir, events.clone());
+            let root = paths.out.clone();
+            let watcher = thread::spawn(move || start_live_reload(&paths, &context));
 
             tracing::info!("serving site at http://localhost:3000/...");
-            reload.join().unwrap()?;
-            server.join().unwrap();
+            server::create(&root, events.clone());
+
+            watcher.join().unwrap();
         }
         Some(Cmds::Build) => {
             let now = Instant::now();
 
-            compress::folder(&out_dir)?;
+            compress::folder(&paths.out)?;
 
             let done = now.elapsed();
             tracing::info!("Finished compressing output in {:?}ms", done.as_millis());
         }
         Some(Cmds::Serve) => {
             tracing::info!("serving site at http://localhost:3000/...");
-            server::create(paths.out_dir, events.clone());
+            server::create(&paths.out, events.clone());
         }
         Some(Cmds::Completion { .. }) => unreachable!(),
     }

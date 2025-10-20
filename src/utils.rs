@@ -59,21 +59,11 @@ where
         .map(|f| f.path().to_owned())
 }
 
-pub fn new_copy_file(file: PathBuf, root: &Path, out_dir: &Path) -> Result<()> {
-    let Some(filename) = file.file_name() else {
-        return Err(anyhow::anyhow!("File {file:?} has no filename"));
-    };
-    let dest = out_dir.join(filename);
-    std::fs::create_dir_all(dest.parent().unwrap())?;
-    std::fs::copy(root.join(file), dest)?;
-    Ok(())
-}
-
 pub fn copy_file(root: impl AsRef<Path>, prefix: &str, entry: impl Into<PathBuf>) -> Result<()> {
     let path = entry.into();
     let filename = path.strip_prefix(prefix)?;
 
-    let file = root.as_ref().join(&filename);
+    let file: PathBuf = [root.as_ref(), filename].into_iter().collect();
 
     std::fs::create_dir_all(file.parent().unwrap())?;
     File::create(&file)?;
@@ -104,6 +94,12 @@ pub fn filename(path: impl Into<PathBuf>) -> String {
         || panic!("No filename found"),
         |name| name.to_string_lossy().to_string(),
     )
+}
+
+pub fn extension(path: &Path) -> String {
+    path.extension()
+        .map(|p| p.to_string_lossy().to_string())
+        .unwrap_or_default()
 }
 
 pub mod toml_date_jiff_serde {

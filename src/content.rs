@@ -5,7 +5,8 @@ use minijinja::{context, value::Value};
 use serde::Serialize;
 
 use crate::{
-    context::StatiskContext as SContext,
+    BuildMode,
+    context::Context as SContext,
     frontmatter::Frontmatter,
     jotdown::render_jotdown,
     templating::{TemplatePath, create_base_context},
@@ -85,10 +86,10 @@ impl Content {
         })
     }
 
-    pub fn render(&self, context: &SContext) -> Result<String> {
+    pub fn render(&self, mode: BuildMode, context: &SContext) -> Result<String> {
         match self.kind {
-            ContentType::HTML | ContentType::XML => self.render_template(context),
-            ContentType::Jotdown | ContentType::Typst => self.render_content(context),
+            ContentType::HTML | ContentType::XML => self.render_template(mode, context),
+            ContentType::Jotdown | ContentType::Typst => self.render_content(mode, context),
             ContentType::Unknown => bail!("Cannot render unknown files"),
         }
     }
@@ -116,7 +117,7 @@ impl Content {
             ..frontmatter_context,
             ..context! {
                 content => content,
-                canonical_url => context.statisk.url().join(&self.url)?,
+                canonical_url => context.config.url.join(&self.url)?,
             }
         })
     }
@@ -132,8 +133,8 @@ impl Content {
         }
     }
 
-    fn render_content(&self, app_context: &SContext) -> Result<String> {
-        let base_context = create_base_context(app_context);
+    fn render_content(&self, mode: BuildMode, app_context: &SContext) -> Result<String> {
+        let base_context = create_base_context(mode, app_context);
         let context = self.context(app_context)?;
         let context = context! { ..base_context, ..context };
         app_context
@@ -141,8 +142,8 @@ impl Content {
             .render_template(&self.layout(), context)
     }
 
-    fn render_template(&self, app_context: &SContext) -> Result<String> {
-        let base_context = create_base_context(app_context);
+    fn render_template(&self, mode: BuildMode, app_context: &SContext) -> Result<String> {
+        let base_context = create_base_context(mode, app_context);
         let context = self.context(app_context)?;
         let context = context! { ..base_context, ..context };
         let env = app_context.templates.environment.acquire_env()?;
