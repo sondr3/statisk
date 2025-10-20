@@ -1,4 +1,10 @@
-use std::collections::HashMap;
+use std::{
+    collections::{HashMap, hash_map::Entry},
+    env::current_dir,
+    fs,
+    path::Path,
+    sync::Mutex,
+};
 
 use anyhow::Result;
 use time::OffsetDateTime;
@@ -6,7 +12,7 @@ use typst::{
     Feature, Features, Library, LibraryExt, World,
     diag::{FileError, FileResult, Warned},
     foundations::{Bytes, Datetime},
-    syntax::{FileId, Source},
+    syntax::{FileId, Source, VirtualPath},
     text::{Font, FontBook},
     utils::LazyHash,
 };
@@ -19,12 +25,12 @@ struct FileEntry {
 }
 
 impl FileEntry {
-    // fn new(bytes: Vec<u8>, source: Option<Source>) -> Self {
-    //     Self {
-    //         bytes: Bytes::new(bytes),
-    //         source,
-    //     }
-    // }
+    fn new(bytes: Vec<u8>) -> Self {
+        Self {
+            bytes: Bytes::new(bytes),
+            source: None,
+        }
+    }
 
     fn source(&mut self, id: FileId) -> FileResult<Source> {
         let source = if let Some(source) = &self.source {
@@ -39,6 +45,55 @@ impl FileEntry {
     }
 }
 
+#[derive(Debug)]
+struct FileSystem {
+    files: Mutex<HashMap<FileId, FileEntry>>,
+}
+
+impl FileSystem {
+    fn new() -> Self {
+        Self {
+            files: Mutex::new(HashMap::new()),
+        }
+    }
+
+    fn map_file<T: Clone>(
+        &self,
+        id: FileId,
+        f: impl FnOnce(&mut FileEntry) -> FileResult<T>,
+    ) -> FileResult<T> {
+        let mut files = self.files.lock().unwrap();
+
+        match files.entry(id) {
+            Entry::Occupied(entry) => Ok(f(entry.into_mut())?),
+            Entry::Vacant(entry) => {
+                let path = id
+                    .vpath()
+                    .resolve(&current_dir().unwrap())
+                    .ok_or_else(|| FileError::NotFound(id.vpath().as_rootless_path().into()))?;
+
+                let bytes = fs::read(&path).map_err(|e| FileError::from_io(e, &path))?;
+
+                let mut file_entry = FileEntry::new(bytes);
+
+                let result = f(&mut file_entry)?;
+
+                entry.insert(file_entry);
+
+                Ok(result)
+            }
+        }
+    }
+
+    fn file(&self, id: FileId) -> FileResult<Bytes> {
+        self.map_file(id, |file_entry| Ok(Bytes::clone(&file_entry.bytes)))
+    }
+
+    fn source(&self, id: FileId) -> FileResult<Source> {
+        self.map_file(id, |file_entry| file_entry.source(id))
+    }
+}
+
 pub struct TypstContext {
     library: LazyHash<Library>,
     source: Source,
@@ -47,7 +102,7 @@ pub struct TypstContext {
 }
 
 impl TypstContext {
-    fn new(source: &str) -> TypstContext {
+    fn new(source: &str, files: HashMap<FileId, FileEntry>) -> TypstContext {
         let library = Library::builder()
             .with_features(Features::from_iter(vec![Feature::Html]))
             .build();
@@ -56,7 +111,7 @@ impl TypstContext {
             library: LazyHash::new(library),
             source: Source::detached(source),
             time: OffsetDateTime::now_utc(),
-            files: HashMap::new(),
+            files,
         }
     }
 
@@ -108,8 +163,33 @@ impl World for TypstContext {
     }
 }
 
-pub fn render_typst(input: &str) -> Result<String> {
-    let world = TypstContext::new(input);
+pub fn render_typst(input: &str, source: &Path) -> Result<String> {
+    // Load all _*.typ files from the source directory
+    let mut files = HashMap::new();
+
+    if let Some(dir) = source.parent() {
+        if let Ok(entries) = fs::read_dir(dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+
+                // Check if file starts with _ and ends with .typ
+                if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
+                    if filename.starts_with('_') && filename.ends_with(".typ") {
+                        // Read file contents
+                        if let Ok(bytes) = fs::read(&path) {
+                            // Create a virtual path relative to the source directory
+                            let vpath = VirtualPath::new(filename);
+                            let file_id = FileId::new(None, vpath);
+
+                            files.insert(file_id, FileEntry::new(bytes));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    let world = TypstContext::new(input, files);
     let Warned { output, warnings } = typst::compile::<HtmlDocument>(&world);
 
     for warning in warnings {

@@ -108,7 +108,7 @@ impl Content {
     pub fn context(&self, context: &SContext) -> Result<Value> {
         let content = match self.kind {
             ContentType::Jotdown => render_jotdown(&self.content)?,
-            ContentType::Typst => render_typst(&self.content)?,
+            ContentType::Typst => render_typst(&self.content, &self.source)?,
             _ => self.content.clone(),
         };
         let frontmatter_context = self.frontmatter.to_context();

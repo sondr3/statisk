@@ -3,17 +3,8 @@ title = "Test"
 description = "Test page"
 +++
 
-#let page(body) = {
-    html.elem(
-        "html",
-        attrs: (lang: "en"),
-        {
-            html.elem("body", body)
-        }
-    )
-}
-
-#show: page.with()
+#import "_common.typ": *
+#show: html.elem.with("article")
 
 = Introduction
 
@@ -22,3 +13,12 @@ various factors that influence _fluid
 dynamics_ in glaciers and how they
 contribute to the formation and
 behaviour of these natural structures.
+
+Check the docs for more details.
+#footnote[https://typst.app/docs]
+
+#html.elem("div", attrs: (style: "background: aqua"))[
+  A div with _Typst content_ inside!
+]
+
+This is an #ipa.
