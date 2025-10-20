@@ -12,7 +12,7 @@ use crate::{
     paths::{LIVERELOAD_JS, Paths},
     render::Renderer,
     statisk_config::StatiskConfig,
-    templating::{Templates, is_page},
+    templating::{Templates, is_page, is_partial},
     utils::{find_files, is_file},
 };
 
@@ -117,6 +117,7 @@ fn collect_js(paths: &Paths, mode: BuildMode) -> Result<Vec<Asset>> {
 
 pub fn collect_content(paths: &Paths) -> Result<Vec<Content>> {
     find_files(&paths.content, is_file)
+        .filter(|f| !is_partial(f))
         .map(|f| Content::from_path(&f, &paths.content, ContentType::from_ext(&f)?))
         .collect()
 }

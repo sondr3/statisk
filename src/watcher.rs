@@ -11,6 +11,7 @@ use crate::{
     asset::{Asset, is_buildable_css_file, is_js},
     context::{Context as AppContext, collect_content, collect_pages},
     paths::Paths,
+    templating::is_partial,
     utils::find_files,
 };
 
@@ -48,12 +49,21 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext) {
         });
 
         let content = scope.spawn(|| {
-            file_watcher(&paths.content.canonicalize()?, &["dj", "toml"], |event| {
-                for path in event.paths.iter().collect::<HashSet<_>>() {
-                    content_watch_handler(paths, path, context)?;
-                }
-                Ok(())
-            })
+            file_watcher(
+                &paths.content.canonicalize()?,
+                &["dj", "toml", "typ"],
+                |event| {
+                    for path in event
+                        .paths
+                        .iter()
+                        .filter(|p| !is_partial(p))
+                        .collect::<HashSet<_>>()
+                    {
+                        content_watch_handler(paths, path, context)?;
+                    }
+                    Ok(())
+                },
+            )
         });
 
         css.join().unwrap().unwrap();
