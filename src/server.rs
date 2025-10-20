@@ -87,10 +87,10 @@ impl NotificationServer {
             let connections = self.clients.clone();
 
             spawn(move || {
-                if let Ok(websocket) = accept(stream) {
-                    if let Ok(mut connections) = connections.write() {
-                        connections.push(websocket);
-                    }
+                if let Ok(websocket) = accept(stream)
+                    && let Ok(mut connections) = connections.write()
+                {
+                    connections.push(websocket);
                 }
             });
         }

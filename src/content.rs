@@ -163,10 +163,10 @@ fn out_path(
         ContentType::XML => PathBuf::from(path.file_name().unwrap_or_default()),
         ContentType::HTML | ContentType::Unknown => {
             // First check if this is a special page (like 404.html)
-            if let Some(filename) = path.file_name().and_then(|f| f.to_str()) {
-                if filename == "404.html" || filename == "500.html" {
-                    return PathBuf::from(filename);
-                }
+            if let Some(filename) = path.file_name().and_then(|f| f.to_str())
+                && (filename == "404.html" || filename == "500.html")
+            {
+                return PathBuf::from(filename);
             }
 
             // Then handle regular pages

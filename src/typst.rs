@@ -167,23 +167,24 @@ pub fn render_typst(input: &str, source: &Path) -> Result<String> {
     // Load all _*.typ files from the source directory
     let mut files = HashMap::new();
 
-    if let Some(dir) = source.parent() {
-        if let Ok(entries) = fs::read_dir(dir) {
-            for entry in entries.flatten() {
-                let path = entry.path();
+    if let Some(dir) = source.parent()
+        && let Ok(entries) = fs::read_dir(dir)
+    {
+        for entry in entries.flatten() {
+            let path = entry.path();
 
-                // Check if file starts with _ and ends with .typ
-                if let Some(filename) = path.file_name().and_then(|n| n.to_str()) {
-                    if filename.starts_with('_') && filename.ends_with(".typ") {
-                        // Read file contents
-                        if let Ok(bytes) = fs::read(&path) {
-                            // Create a virtual path relative to the source directory
-                            let vpath = VirtualPath::new(filename);
-                            let file_id = FileId::new(None, vpath);
+            // Check if file starts with _ and ends with .typ
+            if let Some(filename) = path.file_name().and_then(|n| n.to_str())
+                && filename.starts_with('_')
+                && filename.ends_with(".typ")
+            {
+                // Read file contents
+                if let Ok(bytes) = fs::read(&path) {
+                    // Create a virtual path relative to the source directory
+                    let vpath = VirtualPath::new(filename);
+                    let file_id = FileId::new(None, vpath);
 
-                            files.insert(file_id, FileEntry::new(bytes));
-                        }
-                    }
+                    files.insert(file_id, FileEntry::new(bytes));
                 }
             }
         }
