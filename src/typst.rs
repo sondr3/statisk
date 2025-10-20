@@ -3,14 +3,14 @@ use std::collections::HashMap;
 use anyhow::Result;
 use time::OffsetDateTime;
 use typst::{
-    Feature, Features, Library, World,
+    Feature, Features, Library, LibraryExt, World,
     diag::{FileError, FileResult, Warned},
     foundations::{Bytes, Datetime},
-    html::HtmlDocument,
     syntax::{FileId, Source},
     text::{Font, FontBook},
     utils::LazyHash,
 };
+use typst_html::HtmlDocument;
 
 #[derive(Clone, Debug)]
 struct FileEntry {
