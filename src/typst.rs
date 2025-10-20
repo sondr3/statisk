@@ -112,8 +112,8 @@ pub fn render_typst(input: &str) -> Result<String> {
     let world = TypstContext::new(input);
     let Warned { output, warnings } = typst::compile::<HtmlDocument>(&world);
 
-    if !warnings.is_empty() {
-        for warning in warnings {
+    for warning in warnings {
+        if !warning.message.contains("html export") {
             eprintln!("Warning: {:?}", warning);
         }
     }
