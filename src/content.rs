@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, anyhow, bail};
+use kladd::{ast::Document, html::to_html, parse_kladd};
 use minijinja::{context, value::Value};
 use serde::Serialize;
 
@@ -8,9 +9,7 @@ use crate::{
     BuildMode,
     context::Context as SContext,
     frontmatter::Frontmatter,
-    jotdown::render_jotdown,
     templating::{TemplatePath, create_base_context},
-    typst::render_typst,
     utils::{split_frontmatter, unprefixed_parent},
 };
 
@@ -19,8 +18,7 @@ use crate::{
 pub enum ContentType {
     HTML,
     XML,
-    Jotdown,
-    Typst,
+    Kladd,
     Unknown,
 }
 
@@ -31,22 +29,36 @@ impl ContentType {
             Some(kind) => match kind.to_string_lossy().to_string().as_ref() {
                 "xml" | "xsl" => Ok(ContentType::XML),
                 "html" => Ok(ContentType::HTML),
-                "typ" => Ok(ContentType::Typst),
-                "dj" => Ok(ContentType::Jotdown),
+                "kladd" => Ok(ContentType::Kladd),
                 _ => Ok(ContentType::Unknown),
             },
         }
     }
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug)]
+pub enum ContentKind {
+    Kladd(Document),
+    Other(String),
+}
+
+impl ContentKind {
+    fn get_content(&self) -> String {
+        match self {
+            ContentKind::Kladd(document) => to_html(document),
+            ContentKind::Other(str) => str.clone(),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct Content {
     pub source: PathBuf,
     pub out_path: PathBuf,
     pub dir: Option<String>,
     pub url: String,
     pub frontmatter: Frontmatter,
-    pub content: String,
+    pub content: ContentKind,
     pub kind: ContentType,
 }
 
@@ -56,8 +68,17 @@ impl Content {
         let stem = path.file_stem().unwrap().to_string_lossy();
         let stem = stem.as_ref();
 
-        let (frontmatter, content) =
-            split_frontmatter(&file).ok_or(anyhow!("Could not find content or frontmatter"))?;
+        let (frontmatter, content): (Option<String>, ContentKind) = match kind {
+            ContentType::Kladd => {
+                let doc = parse_kladd(file);
+                (doc.metadata.clone(), ContentKind::Kladd(doc))
+            }
+            _ => {
+                let (frontmatter, content) = split_frontmatter(&file)
+                    .ok_or(anyhow!("Could not find content or frontmatter"))?;
+                (frontmatter, ContentKind::Other(content))
+            }
+        };
 
         let frontmatter = match (kind, frontmatter) {
             (ContentType::XML, None) => Frontmatter::empty(),
@@ -89,7 +110,7 @@ impl Content {
     pub fn render(&self, mode: BuildMode, context: &SContext) -> Result<String> {
         match self.kind {
             ContentType::HTML | ContentType::XML => self.render_template(mode, context),
-            ContentType::Jotdown | ContentType::Typst => self.render_content(mode, context),
+            ContentType::Kladd => self.render_content(mode, context),
             ContentType::Unknown => bail!("Cannot render unknown files"),
         }
     }
@@ -102,15 +123,11 @@ impl Content {
     }
 
     pub fn is_public_page(&self) -> bool {
-        matches!(self.kind, ContentType::Jotdown | ContentType::HTML) && !self.is_special_page()
+        matches!(self.kind, ContentType::Kladd | ContentType::HTML) && !self.is_special_page()
     }
 
     pub fn context(&self, context: &SContext) -> Result<Value> {
-        let content = match self.kind {
-            ContentType::Jotdown => render_jotdown(&self.content)?,
-            ContentType::Typst => render_typst(&self.content, &self.source)?,
-            _ => self.content.clone(),
-        };
+        let content = self.content.get_content();
         let frontmatter_context = self.frontmatter.to_context();
 
         Ok(context! {
@@ -147,7 +164,8 @@ impl Content {
         let context = self.context(app_context)?;
         let context = context! { ..base_context, ..context };
         let env = app_context.templates.environment.acquire_env()?;
-        let template = env.template_from_str(&self.content)?;
+        let content = self.content.get_content();
+        let template = env.template_from_str(&content)?;
         template.render(context).context("Could not render")
     }
 }
@@ -177,7 +195,7 @@ fn out_path(
                 (Some(dir), None) => [dir, "index.html"].into_iter().collect(),
             }
         }
-        ContentType::Jotdown | ContentType::Typst => match &frontmatter.slug {
+        ContentType::Kladd => match &frontmatter.slug {
             Some(slug) => [slug, "index.html"].into_iter().collect(),
             None => [stem, "index.html"].into_iter().collect(),
         },

@@ -40,7 +40,7 @@ impl Renderer {
                     (true, ContentType::XML | ContentType::Unknown) => {
                         f.render(context.mode, context)?.into()
                     }
-                    (true, ContentType::HTML | ContentType::Typst | ContentType::Jotdown) => {
+                    (true, ContentType::HTML | ContentType::Kladd) => {
                         minify::html(&f.render(context.mode, context)?)?
                     }
                     (false, _) => f.render(context.mode, context)?.into(),
