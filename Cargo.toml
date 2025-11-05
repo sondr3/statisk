@@ -47,9 +47,6 @@ url = { version = "2.5.4", features = ["serde"] }
 walkdir = "2.5.0"
 kladd = { git = "https://github.com/sondr3/kladd", version = "0.1.0" }
 
-# [patch.'https://github.com/sondr3/kladd']
-# kladd = { path = "../kladd" }
-
 [dev-dependencies]
 insta = { version = "1.43.1", features = ["toml"] }
 

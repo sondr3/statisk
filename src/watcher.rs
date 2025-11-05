@@ -49,21 +49,17 @@ pub fn start_live_reload(paths: &Paths, context: &AppContext) {
         });
 
         let content = scope.spawn(|| {
-            file_watcher(
-                &paths.content.canonicalize()?,
-                &["dj", "toml", "typ"],
-                |event| {
-                    for path in event
-                        .paths
-                        .iter()
-                        .filter(|p| !is_partial(p))
-                        .collect::<HashSet<_>>()
-                    {
-                        content_watch_handler(paths, path, context)?;
-                    }
-                    Ok(())
-                },
-            )
+            file_watcher(&paths.content.canonicalize()?, &["kladd"], |event| {
+                for path in event
+                    .paths
+                    .iter()
+                    .filter(|p| !is_partial(p))
+                    .collect::<HashSet<_>>()
+                {
+                    content_watch_handler(paths, path, context)?;
+                }
+                Ok(())
+            })
         });
 
         css.join().unwrap().unwrap();
