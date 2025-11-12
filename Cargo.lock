@@ -1189,7 +1189,7 @@ dependencies = [
 [[package]]
 name = "kladd"
 version = "0.1.0"
-source = "git+https://github.com/sondr3/kladd#ffba7babf2e74feeb9c5997d8f3e1d2a9365abe1"
+source = "git+https://github.com/sondr3/kladd#27c06784b917a545d8433d2ee68a74a3c158dcde"
 
 [[package]]
 name = "kqueue"
