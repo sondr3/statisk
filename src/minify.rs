@@ -78,7 +78,7 @@ mod tests {
 </html>        
         "#
         .trim();
-        let minified = String::from_utf8(super::html(&html.to_string()).unwrap()).unwrap();
+        let minified = String::from_utf8(super::html(html).unwrap()).unwrap();
         insta::assert_snapshot!(minified);
     }
 }

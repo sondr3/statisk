@@ -140,7 +140,7 @@ impl Content {
     }
 
     fn is_special_page(&self) -> bool {
-        self.out_path == PathBuf::from("404.html") || self.out_path == PathBuf::from("500.html")
+        self.out_path.as_os_str() == "404.html" || self.out_path.as_os_str() == "500.html"
     }
 
     fn layout(&self) -> TemplatePath {
