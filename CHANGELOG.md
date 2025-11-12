@@ -1,3 +1,51 @@
+## v0.3.0
+> 2025-11-12
+
+## Summary
+
+I gave up on using Lua to configure everything but instead started using my own markup language.
+
+### Commits
+- [[`a626144`](https://github.com/sondr3/statisk)] Use trusted publishing
+- [[`7be09c2`](https://github.com/sondr3/statisk)] Bump kladd to handle my own website
+- [[`6113494`](https://github.com/sondr3/statisk)] Release v0.3.0
+- [[`69ca3ff`](https://github.com/sondr3/statisk)] Only watch for kladd files
+- [[`50f6567`](https://github.com/sondr3/statisk)] Drop jotdown and typst, use my own kladd
+- [[`7bad147`](https://github.com/sondr3/statisk)] Bump the dependencies group with 2 updates
+- [[`a50a1fe`](https://github.com/sondr3/statisk)] Apply some clippy lints
+- [[`ed20fdb`](https://github.com/sondr3/statisk)] Figure out a stupid way to do imports with typst
+- [[`d9cba0f`](https://github.com/sondr3/statisk)] Ignore HTML export warning from typst"
+- [[`3dc86fa`](https://github.com/sondr3/statisk)] Ignore partial typst files when file watching
+- [[`fa20bd4`](https://github.com/sondr3/statisk)] Bump typst to 0.14.0-rc for HTML goodness
+- [[`4bdf530`](https://github.com/sondr3/statisk)] Back to the TOML based configuration
+- [[`16dfe32`](https://github.com/sondr3/statisk)] Partial working thing, I guess?
+- [[`df8bb50`](https://github.com/sondr3/statisk)] Update compression to use StatiskIgnore
+- [[`c3a6215`](https://github.com/sondr3/statisk)] Handle building site in app context
+- [[`a488625`](https://github.com/sondr3/statisk)] Refactor globs for output events
+- [[`8df3609`](https://github.com/sondr3/statisk)] Refactor entire output pipeline
+- [[`6df2eba`](https://github.com/sondr3/statisk)] Sketch out an approach for building output from Lua
+- [[`a670024`](https://github.com/sondr3/statisk)] Fix server and watcher thread spawning
+- [[`fc9acf0`](https://github.com/sondr3/statisk)] Refactor out ignore crate to StatiskIgnore struct
+- [[`0d73e5c`](https://github.com/sondr3/statisk)] Refactor file watching to use debouncer and watch the whole root dir
+- [[`03b3931`](https://github.com/sondr3/statisk)] Add 'public_file' function, rename LuaOutput->Output
+- [[`9d88536`](https://github.com/sondr3/statisk)] Move things into lua module
+- [[`52794b6`](https://github.com/sondr3/statisk)] Refactor LuaOutput struct and builders again
+- [[`5502b95`](https://github.com/sondr3/statisk)] Add walk/ignore to crawl for files
+- [[`4b4327c`](https://github.com/sondr3/statisk)] Move out dir to config
+- [[`d3f8c6d`](https://github.com/sondr3/statisk)] Add a config and root to lua config
+- [[`d9008e5`](https://github.com/sondr3/statisk)] Add globset
+- [[`db82765`](https://github.com/sondr3/statisk)] Rename config to meta
+- [[`ed1eb1f`](https://github.com/sondr3/statisk)] Add output builders for statisk config
+- [[`aa4fb6c`](https://github.com/sondr3/statisk)] After some reflection, I'll drop the asset Lua function
+- [[`e7c55d5`](https://github.com/sondr3/statisk)] Add live reload script into Lua assets in dev mode
+- [[`caf6d6a`](https://github.com/sondr3/statisk)] Add assets field and lua method to gather them
+- [[`6d6a83b`](https://github.com/sondr3/statisk)] Switch to the LuaStatisk setup struct for configuring things
+- [[`6033c2f`](https://github.com/sondr3/statisk)] Add mode to the LuaStatisk struct
+- [[`ea56ba0`](https://github.com/sondr3/statisk)] Add paths to lua config
+- [[`c8452c9`](https://github.com/sondr3/statisk)] Start moving to using Lua
+- [[`0b95339`](https://github.com/sondr3/statisk)] Bump actions/checkout from 4 to 5 in the dependencies group
+- [[`7ca96cb`](https://github.com/sondr3/statisk)] Bump actions/download-artifact from 4 to 5 in the dependencies group
+
 ## v0.2.6
 
 > 2025-06-09
