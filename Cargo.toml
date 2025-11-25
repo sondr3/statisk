@@ -45,7 +45,7 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter", "time"] }
 tungstenite = "0.26.2"
 url = { version = "2.5.4", features = ["serde"] }
 walkdir = "2.5.0"
-kladd = { git = "https://github.com/sondr3/kladd", version = "0.1.0" }
+kladd = "0.2.0"
 
 [dev-dependencies]
 insta = { version = "1.43.1", features = ["toml"] }

@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, anyhow, bail};
-use kladd::{ast::Document, html::to_html, parse_kladd};
+use kladd::{ast::Document, html::to_html, parser::Parser};
 use minijinja::{context, value::Value};
 use serde::Serialize;
 
@@ -43,10 +43,10 @@ pub enum ContentKind {
 }
 
 impl ContentKind {
-    fn get_content(&self) -> String {
+    fn get_content(&self) -> Result<String> {
         match self {
-            ContentKind::Kladd(document) => to_html(document),
-            ContentKind::Other(str) => str.clone(),
+            ContentKind::Kladd(document) => Ok(to_html(document)?),
+            ContentKind::Other(str) => Ok(str.clone()),
         }
     }
 }
@@ -68,22 +68,22 @@ impl Content {
         let stem = path.file_stem().unwrap().to_string_lossy();
         let stem = stem.as_ref();
 
-        let (frontmatter, content): (Option<String>, ContentKind) = match kind {
+        let (frontmatter, content): (Frontmatter, ContentKind) = match kind {
             ContentType::Kladd => {
-                let doc = parse_kladd(file);
-                (doc.metadata.clone(), ContentKind::Kladd(doc))
+                let doc = Parser::new(&file)?;
+                let (doc, metadata): (_, Option<Frontmatter>) = doc.finish();
+                (metadata.unwrap(), ContentKind::Kladd(doc))
             }
             _ => {
                 let (frontmatter, content) = split_frontmatter(&file)
                     .ok_or(anyhow!("Could not find content or frontmatter"))?;
+                let frontmatter = match (kind, frontmatter) {
+                    (ContentType::XML, None) => Frontmatter::empty(),
+                    (_, Some(fm)) => Frontmatter::deserialize(&fm)?,
+                    _ => bail!("Missing frontmatter in content"),
+                };
                 (frontmatter, ContentKind::Other(content))
             }
-        };
-
-        let frontmatter = match (kind, frontmatter) {
-            (ContentType::XML, None) => Frontmatter::empty(),
-            (_, Some(fm)) => Frontmatter::deserialize(&fm)?,
-            _ => bail!("Missing frontmatter in content"),
         };
 
         let dir = unprefixed_parent(path, root);
@@ -127,7 +127,7 @@ impl Content {
     }
 
     pub fn context(&self, context: &SContext) -> Result<Value> {
-        let content = self.content.get_content();
+        let content = self.content.get_content()?;
         let frontmatter_context = self.frontmatter.to_context();
 
         Ok(context! {
@@ -164,7 +164,7 @@ impl Content {
         let context = self.context(app_context)?;
         let context = context! { ..base_context, ..context };
         let env = app_context.templates.environment.acquire_env()?;
-        let content = self.content.get_content();
+        let content = self.content.get_content()?;
         let template = env.template_from_str(&content)?;
         template.render(context).context("Could not render")
     }
